@@ -41,7 +41,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     ? [...sliderItems, ...sliderItems, ...sliderItems]
     : [];
 
-  // Update 3D transforms based on position - Apple Coverflow style
+  // Update 3D transforms based on position
   const updateItemTransforms = useCallback(() => {
     if (!carouselRef.current || !containerRef.current) return;
 
@@ -55,21 +55,19 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
 
       // Calculate distance from center
       const itemCenter = itemRect.left + itemRect.width / 2 - containerRect.left;
-      const distanceFromCenter = itemCenter - containerCenter;
+      const distanceFromCenter = Math.abs(itemCenter - containerCenter);
       const maxDistance = containerCenter;
-      const normalizedDistance = Math.min(Math.abs(distanceFromCenter) / maxDistance, 1);
+      const normalizedDistance = Math.min(distanceFromCenter / maxDistance, 1);
 
-      // Apple Coverflow: ±30° rotation based on position
-      const rotationY = (distanceFromCenter / maxDistance) * 30;
+      // Scale: center = 1.4, sides = 0.6
+      const scale = 1.4 - (normalizedDistance * 0.8);
 
-      // Scale: center = 1.2, edges = 0.8
-      const scale = 1.2 - (normalizedDistance * 0.4);
+      // Opacity: center = 1, sides = 0.3
+      const opacity = 1 - (normalizedDistance * 0.7);
 
-      // Opacity: center = 1, edges = 0.5
-      const opacity = 1 - (normalizedDistance * 0.5);
-
-      // Depth: center has most Z depth
-      const translateZ = (1 - normalizedDistance) * 150;
+      // 3D rotation
+      const rotationY = (itemCenter - containerCenter) / 10;
+      const translateZ = (1 - normalizedDistance) * 100;
 
       gsap.set(htmlItem, {
         scale,
@@ -255,18 +253,36 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
       centerOffset
     });
 
-    // Create smooth coverflow carousel animation
-    console.log('🎬 [GameCarousel.spinCarousel] Starting smooth GSAP animation...');
+    // Create casino slot machine animation timeline
+    console.log('🎬 [GameCarousel.spinCarousel] Starting GSAP animation...');
+    const timeline = gsap.timeline();
 
-    // Calculate scroll distance for smooth continuous rotation
-    const currentX = gsap.getProperty(carouselRef.current, 'x') as number;
-    const rotations = 3; // Number of full carousel rotations before final position
-    const totalDistance = (rotations * sliderItems.length * itemWidth) + (targetPosition - currentX);
+    // Phase 1: Fast acceleration (like pulling slot lever)
+    timeline.to(carouselRef.current, {
+      x: '-=800',
+      duration: 0.3,
+      ease: 'power2.in',
+    });
 
-    gsap.to(carouselRef.current, {
-      x: currentX + totalDistance,
-      duration: 4.5,
-      ease: 'power1.inOut',
+    // Phase 2: High speed spinning
+    timeline.to(carouselRef.current, {
+      x: targetPosition - 2000,
+      duration: 3,
+      ease: 'none',
+    });
+
+    // Phase 3: Gradual deceleration (slot machine slow down)
+    timeline.to(carouselRef.current, {
+      x: targetPosition - 500,
+      duration: 1.5,
+      ease: 'power1.out',
+    });
+
+    // Phase 4: Final positioning with bounce (mechanical stop)
+    timeline.to(carouselRef.current, {
+      x: targetPosition,
+      duration: 1.2,
+      ease: 'elastic.out(0.8, 0.4)',
       onUpdate: updateItemTransforms,
       onComplete: () => {
         console.log('🏁 [GameCarousel.spinCarousel] Animation complete!');
@@ -363,9 +379,9 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
       {/* Carousel Container with 3D Perspective */}
       <div
         ref={containerRef}
-        className="overflow-hidden relative h-[650px] neon-border rounded-xl bg-black/50 backdrop-blur-sm"
+        className="overflow-hidden relative h-[500px] neon-border rounded-xl bg-black/50 backdrop-blur-sm"
         style={{
-          perspective: '1200px',
+          perspective: '2000px',
           perspectiveOrigin: 'center center'
         }}
       >
@@ -378,7 +394,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
 
         <div
           ref={carouselRef}
-          className="flex gap-12 absolute top-1/3 transform -translate-y-1/2"
+          className="flex gap-12 absolute top-1/2 transform -translate-y-1/2"
           style={{
             left: '50%',
             transformStyle: 'preserve-3d',
@@ -397,13 +413,13 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
                 }}
               >
                 <div className={`
-                  rounded-xl overflow-visible shadow-2xl
+                  rounded-xl overflow-hidden shadow-2xl
                   ${isFiller
                     ? 'bg-gradient-to-br from-gray-900 to-gray-800 border-4 border-red-600/50'
                     : 'bg-gradient-to-br from-purple-600 to-pink-600 border-4 border-casino-gold'
                   }
                 `}>
-                  <div className="aspect-square relative bg-white overflow-hidden rounded-t-lg">
+                  <div className="aspect-square relative bg-white">
                     {isFiller ? (
                       <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
                         <span className="text-3xl font-bold text-red-500 text-center px-4">
@@ -420,7 +436,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
                       />
                     )}
                   </div>
-                  <div className="p-4 text-center bg-black/80 rounded-b-lg">
+                  <div className="p-4 text-center bg-black/80">
                     <h3 className="text-lg font-bold text-white truncate">
                       {item.title}
                     </h3>
@@ -429,55 +445,6 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
                         {item.price} лв
                       </p>
                     )}
-                  </div>
-                </div>
-
-                {/* Glass Reflection */}
-                <div
-                  className="mt-1 overflow-hidden rounded-b-lg"
-                  style={{
-                    height: '80px',
-                    background: 'linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%)',
-                    marginTop: '-4px',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '280px',
-                      transformOrigin: 'top center',
-                      transform: 'scaleY(-1)',
-                      opacity: 0.5,
-                      filter: 'blur(2px)',
-                      maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0))',
-                      WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0))',
-                    }}
-                  >
-                    <div className={`
-                      w-full h-full rounded-t-lg overflow-hidden
-                      ${isFiller
-                        ? 'bg-gradient-to-br from-gray-900 to-gray-800'
-                        : 'bg-gradient-to-br from-purple-600 to-pink-600'
-                      }
-                    `}>
-                      <div className="aspect-square relative bg-white h-full">
-                        {isFiller ? (
-                          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
-                            <span className="text-3xl font-bold text-red-500 text-center px-4 opacity-30">
-                              {item.title}
-                            </span>
-                          </div>
-                        ) : (
-                          <Image
-                            src={item.image_url}
-                            alt={item.title}
-                            fill
-                            className="object-contain p-6 opacity-30"
-                            unoptimized
-                          />
-                        )}
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
