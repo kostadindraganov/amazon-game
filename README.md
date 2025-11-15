@@ -2,6 +2,20 @@
 
 A horizontal Wheel-of-Fortune style casino game built with Next.js 16, TypeScript, GSAP, Tailwind CSS, Supabase, and Cloudflare R2.
 
+## 📚 Documentation
+
+For comprehensive project documentation, see:
+
+| Document | Description |
+|----------|-------------|
+| **[PRD.md](./PRD.md)** | Complete Product Requirements Document with all specifications |
+| **[PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)** | Detailed file/folder structure and organization guidelines |
+| **[GAME_FLOW.md](./GAME_FLOW.md)** | Visual flow diagrams and game logic explanations |
+| **[TECHNICAL_ARCHITECTURE.md](./TECHNICAL_ARCHITECTURE.md)** | System architecture, data flow, and component interactions |
+| **[IMPLEMENTATION_CHECKLIST.md](./IMPLEMENTATION_CHECKLIST.md)** | Step-by-step implementation guide for developers |
+
+**💡 Tip:** If you're new to the project, start with [IMPLEMENTATION_CHECKLIST.md](./IMPLEMENTATION_CHECKLIST.md) for a guided walkthrough.
+
 ## 🎯 Features
 
 ### Game Features
