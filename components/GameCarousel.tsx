@@ -12,8 +12,10 @@ interface GameCarouselProps {
 
 export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarouselProps) {
   const carouselRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [sliderItems, setSliderItems] = useState<SliderItem[]>([]);
   const [currentQueueId, setCurrentQueueId] = useState<number | null>(null);
+  const animationFrameRef = useRef<number>();
 
   // Fetch slider items
   useEffect(() => {
@@ -30,7 +32,65 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     }
   };
 
-  // Poll for queue updates
+  // Create infinite loop by triplicating items
+  const infiniteItems = sliderItems.length > 0
+    ? [...sliderItems, ...sliderItems, ...sliderItems]
+    : [];
+
+  // Update 3D transforms based on position
+  const updateItemTransforms = useCallback(() => {
+    if (!carouselRef.current || !containerRef.current) return;
+
+    const items = carouselRef.current.children;
+    const containerCenter = containerRef.current.offsetWidth / 2;
+
+    Array.from(items).forEach((item) => {
+      const htmlItem = item as HTMLElement;
+      const itemRect = htmlItem.getBoundingClientRect();
+      const containerRect = containerRef.current!.getBoundingClientRect();
+
+      // Calculate distance from center
+      const itemCenter = itemRect.left + itemRect.width / 2 - containerRect.left;
+      const distanceFromCenter = Math.abs(itemCenter - containerCenter);
+      const maxDistance = containerCenter;
+      const normalizedDistance = Math.min(distanceFromCenter / maxDistance, 1);
+
+      // Scale: center = 1.4, sides = 0.6
+      const scale = 1.4 - (normalizedDistance * 0.8);
+
+      // Opacity: center = 1, sides = 0.3
+      const opacity = 1 - (normalizedDistance * 0.7);
+
+      // 3D rotation
+      const rotationY = (itemCenter - containerCenter) / 10;
+      const translateZ = (1 - normalizedDistance) * 100;
+
+      gsap.set(htmlItem, {
+        scale,
+        opacity,
+        rotationY,
+        z: translateZ,
+        transformOrigin: 'center center'
+      });
+    });
+
+    animationFrameRef.current = requestAnimationFrame(updateItemTransforms);
+  }, []);
+
+  // Start transform updates when items are loaded
+  useEffect(() => {
+    if (infiniteItems.length > 0 && !isSpinning) {
+      updateItemTransforms();
+    }
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [infiniteItems.length, isSpinning, updateItemTransforms]);
+
+  // Poll for queue updates - ONLY trigger spins from API
   useEffect(() => {
     const interval = setInterval(async () => {
       if (!isSpinning) {
@@ -49,9 +109,15 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
       // If there's a processing player and we're not spinning, start a game
       if (data.currentPlayer && !isSpinning) {
         setCurrentQueueId(data.currentPlayer.id);
+
+        // Show player modal
+        window.dispatchEvent(new CustomEvent('showPlayer', {
+          detail: { username: data.currentPlayer.username }
+        }));
+
         setTimeout(() => {
           spinCarousel(data.currentPlayer.id);
-        }, 2000);
+        }, 2500);
       }
     } catch (error) {
       console.error('Error checking queue:', error);
@@ -60,6 +126,11 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
 
   const spinCarousel = useCallback(async (queueId: number) => {
     if (!carouselRef.current || sliderItems.length === 0) return;
+
+    // Stop transform updates during spin
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
 
     setIsSpinning(true);
 
@@ -75,36 +146,66 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     // Calculate target position
     let targetIndex;
     if (spinData.isWinner && spinData.product) {
-      // Find the winning product in the slider
-      targetIndex = sliderItems.findIndex(item => item.id === spinData.product.id);
-      if (targetIndex === -1) targetIndex = Math.floor(Math.random() * sliderItems.length);
+      // Find the winning product in the middle set
+      const baseIndex = sliderItems.findIndex(item => item.id === spinData.product.id);
+      if (baseIndex === -1) {
+        targetIndex = sliderItems.length + Math.floor(Math.random() * sliderItems.length);
+      } else {
+        targetIndex = sliderItems.length + baseIndex; // Middle set
+      }
     } else {
-      // Find a "Try Again" filler
+      // Find a "Try Again" filler in middle set
       const fillerIndices = sliderItems
         .map((item, idx) => item.type === 'filler' ? idx : -1)
         .filter(idx => idx !== -1);
-      targetIndex = fillerIndices[Math.floor(Math.random() * fillerIndices.length)] || 0;
+      const randomFillerIndex = fillerIndices[Math.floor(Math.random() * fillerIndices.length)] || 0;
+      targetIndex = sliderItems.length + randomFillerIndex;
     }
 
-    const itemWidth = 300; // Width of each item + gap
+    const itemWidth = 320; // Width of each item + gap
     const centerOffset = (window.innerWidth / 2) - (itemWidth / 2);
+
+    // Calculate final position
     const targetPosition = -(targetIndex * itemWidth) + centerOffset;
 
-    // Add extra spins for effect
-    const extraDistance = sliderItems.length * itemWidth * 3;
-    const totalDistance = targetPosition - extraDistance;
+    // Create casino slot machine animation timeline
+    const timeline = gsap.timeline();
 
-    // GSAP animation
-    gsap.to(carouselRef.current, {
-      x: totalDistance,
-      duration: 5,
-      ease: 'power3.out',
+    // Phase 1: Fast acceleration (like pulling slot lever)
+    timeline.to(carouselRef.current, {
+      x: '-=800',
+      duration: 0.3,
+      ease: 'power2.in',
+    });
+
+    // Phase 2: High speed spinning
+    timeline.to(carouselRef.current, {
+      x: targetPosition - 2000,
+      duration: 3,
+      ease: 'none',
+    });
+
+    // Phase 3: Gradual deceleration (slot machine slow down)
+    timeline.to(carouselRef.current, {
+      x: targetPosition - 500,
+      duration: 1.5,
+      ease: 'power1.out',
+    });
+
+    // Phase 4: Final positioning with bounce (mechanical stop)
+    timeline.to(carouselRef.current, {
+      x: targetPosition,
+      duration: 1.2,
+      ease: 'elastic.out(0.8, 0.4)',
+      onUpdate: updateItemTransforms,
       onComplete: () => {
         setIsSpinning(false);
 
+        // Restart transform updates
+        updateItemTransforms();
+
         // Show winner modal if applicable
         if (spinData.isWinner) {
-          // Trigger winner modal
           window.dispatchEvent(new CustomEvent('showWinner', {
             detail: {
               username: spinData.winner?.username,
@@ -125,64 +226,65 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
       }
     });
 
-  }, [sliderItems, setIsSpinning]);
-
-  const handleManualSpin = () => {
-    if (isSpinning) return;
-
-    // Trigger next player from queue
-    fetch('/api/game/queue/next', { method: 'POST' })
-      .then(res => res.json())
-      .then(data => {
-        if (data.hasNext) {
-          setCurrentQueueId(data.player.id);
-          setTimeout(() => {
-            spinCarousel(data.player.id);
-          }, 2000);
-        } else {
-          alert('No players in queue. Use API to add players.');
-        }
-      })
-      .catch(console.error);
-  };
+  }, [sliderItems, setIsSpinning, updateItemTransforms]);
 
   if (sliderItems.length === 0) {
-    return <div className="text-center py-20">Loading carousel...</div>;
+    return (
+      <div className="text-center py-20">
+        <div className="text-4xl neon-text animate-pulse">Loading carousel...</div>
+      </div>
+    );
   }
 
   return (
     <div className="relative mb-16">
-      {/* Pointer/Arrow */}
-      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-16 z-30">
-        <div className="text-8xl animate-bounce">
-          ⬇️
-        </div>
-      </div>
+      {/* Carousel Container with 3D Perspective */}
+      <div
+        ref={containerRef}
+        className="overflow-hidden relative h-[500px] neon-border rounded-xl bg-black/50 backdrop-blur-sm"
+        style={{
+          perspective: '2000px',
+          perspectiveOrigin: 'center center'
+        }}
+      >
+        {/* Center indicator line */}
+        <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-casino-gold/50 z-20 transform -translate-x-1/2 shadow-lg shadow-casino-gold/50" />
 
-      {/* Carousel Container */}
-      <div className="overflow-hidden relative h-96 neon-border rounded-xl bg-black/50 backdrop-blur-sm">
+        {/* Gradient overlays for depth */}
+        <div className="absolute left-0 top-0 bottom-0 w-1/4 bg-gradient-to-r from-black via-black/80 to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-1/4 bg-gradient-to-l from-black via-black/80 to-transparent z-10 pointer-events-none" />
+
         <div
           ref={carouselRef}
-          className="flex gap-8 absolute top-1/2 transform -translate-y-1/2"
-          style={{ left: '50%' }}
+          className="flex gap-12 absolute top-1/2 transform -translate-y-1/2"
+          style={{
+            left: '50%',
+            transformStyle: 'preserve-3d',
+          }}
         >
-          {sliderItems.map((item, index) => {
+          {infiniteItems.map((item, index) => {
             const isFiller = item.type === 'filler';
 
             return (
               <div
                 key={`${item.id}-${index}`}
-                className="relative flex-shrink-0 transition-transform duration-300 hover:scale-105"
-                style={{ width: '250px' }}
+                className="relative flex-shrink-0"
+                style={{
+                  width: '280px',
+                  transformStyle: 'preserve-3d',
+                }}
               >
                 <div className={`
-                  rounded-lg overflow-hidden shadow-2xl
-                  ${isFiller ? 'bg-gray-800 border-4 border-red-600' : 'bg-gradient-to-br from-purple-600 to-pink-600 border-4 border-casino-gold'}
+                  rounded-xl overflow-hidden shadow-2xl
+                  ${isFiller
+                    ? 'bg-gradient-to-br from-gray-900 to-gray-800 border-4 border-red-600/50'
+                    : 'bg-gradient-to-br from-purple-600 to-pink-600 border-4 border-casino-gold'
+                  }
                 `}>
                   <div className="aspect-square relative bg-white">
                     {isFiller ? (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-4xl font-bold text-red-600">
+                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
+                        <span className="text-3xl font-bold text-red-500 text-center px-4">
                           {item.title}
                         </span>
                       </div>
@@ -191,17 +293,17 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
                         src={item.image_url}
                         alt={item.title}
                         fill
-                        className="object-contain p-4"
+                        className="object-contain p-6"
                         unoptimized
                       />
                     )}
                   </div>
-                  <div className="p-4 text-center bg-black/70">
+                  <div className="p-4 text-center bg-black/80">
                     <h3 className="text-lg font-bold text-white truncate">
                       {item.title}
                     </h3>
                     {!isFiller && (
-                      <p className="text-casino-gold text-xl font-bold">
+                      <p className="text-casino-gold text-2xl font-bold mt-1">
                         {item.price} лв
                       </p>
                     )}
@@ -213,23 +315,14 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
         </div>
       </div>
 
-      {/* Spin Button */}
-      <div className="text-center mt-8">
-        <button
-          onClick={handleManualSpin}
-          disabled={isSpinning}
-          className={`
-            px-16 py-6 text-3xl font-bold rounded-full
-            transition-all duration-300 transform
-            ${isSpinning
-              ? 'bg-gray-600 cursor-not-allowed opacity-50'
-              : 'bg-gradient-to-r from-casino-purple to-casino-neon hover:scale-110 neon-border animate-pulse'
-            }
-          `}
-        >
-          {isSpinning ? '🎰 SPINNING...' : '🎰 ЗАВЪРТИ'}
-        </button>
-      </div>
+      {/* Status indicator */}
+      {isSpinning && (
+        <div className="text-center mt-8">
+          <div className="inline-block px-8 py-4 bg-gradient-to-r from-casino-purple to-casino-neon rounded-full neon-border">
+            <span className="text-2xl font-bold animate-pulse">🎰 SPINNING...</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
