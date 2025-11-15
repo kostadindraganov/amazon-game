@@ -24,11 +24,15 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
 
   const fetchSliderItems = async () => {
     try {
+      console.log('📡 [GameCarousel] Fetching slider items...');
       const res = await fetch('/api/game/slider-items');
+      console.log('📡 [GameCarousel] API response status:', res.status);
       const data = await res.json();
-      setSliderItems(data.items);
+      console.log('📡 [GameCarousel] API response data:', data);
+      console.log('📡 [GameCarousel] Items received:', data.items?.length || 0);
+      setSliderItems(data.items || []);
     } catch (error) {
-      console.error('Error fetching slider items:', error);
+      console.error('❌ [GameCarousel] Error fetching slider items:', error);
     }
   };
 
@@ -90,24 +94,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     };
   }, [infiniteItems.length, isSpinning, updateItemTransforms]);
 
-  // Poll for queue updates - ONLY trigger spins from API
-  useEffect(() => {
-    console.log('🔄 [GameCarousel] Setting up polling interval (2s)');
-    const interval = setInterval(async () => {
-      if (!isSpinning) {
-        checkForNextPlayer();
-      } else {
-        console.log('⏸️  [GameCarousel] Skipping poll - currently spinning');
-      }
-    }, 2000);
-
-    return () => {
-      console.log('🛑 [GameCarousel] Clearing polling interval');
-      clearInterval(interval);
-    };
-  }, [isSpinning]);
-
-  const checkForNextPlayer = async () => {
+  const checkForNextPlayer = useCallback(async () => {
     try {
       console.log('🔍 [GameCarousel] Checking for next player...');
       const res = await fetch('/api/game/current');
@@ -120,7 +107,8 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
         currentPlayerPlays: data.currentPlayer?.plays,
         queueLength: data.queueLength,
         isSpinning: isSpinning,
-        trackedQueueId: currentQueueId
+        trackedQueueId: currentQueueId,
+        sliderItemsLoaded: sliderItems.length
       });
 
       // If there's a processing player and we're not spinning, start a game
@@ -136,7 +124,9 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
 
         // Ensure slider items are loaded before proceeding
         if (sliderItems.length === 0) {
-          console.log('⏳ [GameCarousel] Waiting for slider items to load...');
+          console.log('⏳ [GameCarousel] Waiting for slider items to load...', {
+            sliderItemsLength: sliderItems.length
+          });
           return;
         }
 
@@ -170,7 +160,24 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     } catch (error) {
       console.error('❌ [GameCarousel] Error checking queue:', error);
     }
-  };
+  }, [isSpinning, currentQueueId, sliderItems.length, setIsSpinning]);
+
+  // Poll for queue updates - ONLY trigger spins from API
+  useEffect(() => {
+    console.log('🔄 [GameCarousel] Setting up polling interval (2s)');
+    const interval = setInterval(async () => {
+      if (!isSpinning) {
+        checkForNextPlayer();
+      } else {
+        console.log('⏸️  [GameCarousel] Skipping poll - currently spinning');
+      }
+    }, 2000);
+
+    return () => {
+      console.log('🛑 [GameCarousel] Clearing polling interval');
+      clearInterval(interval);
+    };
+  }, [isSpinning, checkForNextPlayer]);
 
   const spinCarousel = useCallback(async (queueId: number) => {
     console.log('🎰 [GameCarousel.spinCarousel] Starting spin for queueId:', queueId);
