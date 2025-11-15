@@ -117,7 +117,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
 
         setTimeout(() => {
           spinCarousel(data.currentPlayer.id);
-        }, 2500);
+        }, 3000);
       }
     } catch (error) {
       console.error('Error checking queue:', error);
@@ -219,9 +219,25 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
 
         // Check if same player has more plays
         if (spinData.remainingPlays > 0) {
-          setTimeout(() => {
-            spinCarousel(queueId);
-          }, 5000);
+          // Wait for winner modal to close (5s) or immediately if no winner
+          const waitTime = spinData.isWinner ? 5000 : 0;
+          setTimeout(async () => {
+            // Fetch current player data to get username
+            const currentRes = await fetch('/api/game/current');
+            const currentData = await currentRes.json();
+
+            if (currentData.currentPlayer) {
+              // Show player modal again
+              window.dispatchEvent(new CustomEvent('showPlayer', {
+                detail: { username: currentData.currentPlayer.username }
+              }));
+
+              // Wait 3 seconds then spin again
+              setTimeout(() => {
+                spinCarousel(queueId);
+              }, 3000);
+            }
+          }, waitTime);
         }
       }
     });
