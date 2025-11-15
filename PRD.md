@@ -160,3 +160,202 @@ CREATE TABLE game_queue (
   status TEXT DEFAULT 'pending' -- pending | processing | done
 );
 ```
+
+---
+
+# 5. APIs
+
+## POST /api/game/play
+
+Adds new play(s) for a user.
+
+**Request:**
+```json
+{
+  "username": "KOKO",
+  "points": 300
+}
+```
+
+**Response:**
+```json
+{
+  "queued": true,
+  "playsQueued": 1
+}
+```
+
+## POST /api/admin/products
+
+Creates a product.
+
+## DELETE /api/admin/products/:id
+
+Deletes a product.
+
+## POST /api/admin/settings
+
+Updates settings.
+
+## GET /api/game/current
+
+Returns:
+- Current active user
+- Queue length
+- Game status (idle/spinning)
+
+---
+
+# 6. Slider Logic
+
+## Constructing slider items:
+
+1. Load active products
+2. Count fillers needed:
+   ```
+   fillers = sliderItemCount - activeProducts.length
+   ```
+3. Generate slider array:
+
+```javascript
+const sliderItems = [
+  ...activeProducts,
+  ...Array(fillers).fill({
+    type: "filler",
+    title: "Try Again",
+    image: "/try-again.png"
+  })
+];
+```
+
+## GSAP Animation Requirements:
+
+- Smooth horizontal movement.
+- Ease-out slow finish.
+- Center item scale: 1.3
+- Side items scale: 1.0
+- Item spotlight effect on center item.
+
+---
+
+# 7. Modal Requirements
+
+## Start Game Modal
+
+- Show for 2 seconds
+- Text: "Currently playing: {username}"
+
+## Winner Modal
+
+- Display for 5 seconds
+- Contains:
+  - Username
+  - Prize image
+  - Prize title
+  - Price
+
+---
+
+# 8. Leaderboard
+
+Shows last 5 entries from winners table.
+
+Each row:
+- Username
+- Prize price
+
+---
+
+# 9. Development Phases
+
+## Phase 1 — Project Setup
+
+- Next.js 16 + TypeScript
+- TailwindCSS
+- GSAP
+- Supabase client
+- Cloudflare R2 setup
+
+## Phase 2 — Database & Backend
+
+- Implement Supabase tables
+- Implement API routes
+- Implement queue logic
+
+## Phase 3 — Admin Panel
+
+- CRUD operations
+- Upload to R2
+- Settings page
+- Winners page
+
+## Phase 4 — Core Game Logic
+
+- Queue processor
+- Spin counter
+- Prize selection
+- Winner recording
+
+## Phase 5 — Front-End Game Implementation
+
+- GSAP slider
+- Modals
+- Spin button
+- API polling
+- Leaderboard
+
+## Phase 6 — Polish & Deployment
+
+- Casino-style design
+- Responsive improvements
+- Documentation
+
+---
+
+# 10. Demo Product Data
+
+```sql
+INSERT INTO products (title, price, image_url) VALUES
+('iPhone 15', 1600, 'https://example.com/iphone.jpg'),
+('PS5 Console', 900, 'https://example.com/ps5.jpg'),
+('AirPods Pro', 350, 'https://example.com/airpods.jpg');
+```
+
+---
+
+# 11. Cloudflare R2 Instructions
+
+1. Create R2 bucket.
+2. Create API token with Read and Write permissions.
+3. Add environment variables:
+
+```
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_BUCKET_NAME=
+R2_PUBLIC_URL=
+```
+
+4. Implement API endpoint to generate a signed upload URL.
+5. Front-end:
+   - Upload image to signed URL.
+   - Store returned image URL into Supabase.
+
+---
+
+# 12. Deployment Requirements
+
+## Vercel
+
+- Add all .env variables
+- Ensure image domains include Cloudflare R2 public URL
+
+## Supabase
+
+- Ensure row-level security is appropriately configured
+
+## Cloudflare R2
+
+- CORS:
+  - `PUT`, `GET`, `HEAD`
