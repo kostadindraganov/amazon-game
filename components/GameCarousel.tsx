@@ -108,7 +108,21 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
 
       // If there's a processing player and we're not spinning, start a game
       if (data.currentPlayer && !isSpinning) {
+        // Prevent duplicate processing of the same player
+        if (currentQueueId === data.currentPlayer.id) {
+          return; // Already processing this player
+        }
+
+        // Ensure slider items are loaded before proceeding
+        if (sliderItems.length === 0) {
+          console.log('Waiting for slider items to load...');
+          return;
+        }
+
         setCurrentQueueId(data.currentPlayer.id);
+
+        // Set spinning state immediately to prevent duplicate triggers
+        setIsSpinning(true);
 
         // Show player modal
         window.dispatchEvent(new CustomEvent('showPlayer', {
@@ -125,23 +139,29 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
   };
 
   const spinCarousel = useCallback(async (queueId: number) => {
-    if (!carouselRef.current || sliderItems.length === 0) return;
-
-    // Stop transform updates during spin
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
+    if (!carouselRef.current || sliderItems.length === 0) {
+      // Reset state if we can't spin
+      setIsSpinning(false);
+      setCurrentQueueId(null);
+      return;
     }
 
-    setIsSpinning(true);
+    try {
+      // Stop transform updates during spin
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
 
-    // Call spin API to determine outcome
-    const spinRes = await fetch('/api/game/spin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ queueId })
-    });
+      setIsSpinning(true);
 
-    const spinData = await spinRes.json();
+      // Call spin API to determine outcome
+      const spinRes = await fetch('/api/game/spin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ queueId })
+      });
+
+      const spinData = await spinRes.json();
 
     // Calculate target position
     let targetIndex;
@@ -200,6 +220,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
       onUpdate: updateItemTransforms,
       onComplete: () => {
         setIsSpinning(false);
+        setCurrentQueueId(null); // Reset so next player can be processed
 
         // Restart transform updates
         updateItemTransforms();
@@ -241,7 +262,13 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
         }
       }
     });
-
+    } catch (error) {
+      console.error('Error during spin:', error);
+      // Reset state on error
+      setIsSpinning(false);
+      setCurrentQueueId(null);
+      updateItemTransforms();
+    }
   }, [sliderItems, setIsSpinning, updateItemTransforms]);
 
   if (sliderItems.length === 0) {
