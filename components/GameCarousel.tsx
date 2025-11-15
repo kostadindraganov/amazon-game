@@ -92,54 +92,91 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
 
   // Poll for queue updates - ONLY trigger spins from API
   useEffect(() => {
+    console.log('🔄 [GameCarousel] Setting up polling interval (2s)');
     const interval = setInterval(async () => {
       if (!isSpinning) {
         checkForNextPlayer();
+      } else {
+        console.log('⏸️  [GameCarousel] Skipping poll - currently spinning');
       }
     }, 2000);
 
-    return () => clearInterval(interval);
+    return () => {
+      console.log('🛑 [GameCarousel] Clearing polling interval');
+      clearInterval(interval);
+    };
   }, [isSpinning]);
 
   const checkForNextPlayer = async () => {
     try {
+      console.log('🔍 [GameCarousel] Checking for next player...');
       const res = await fetch('/api/game/current');
       const data = await res.json();
+
+      console.log('📊 [GameCarousel] Current game state:', {
+        hasCurrentPlayer: !!data.currentPlayer,
+        currentPlayerId: data.currentPlayer?.id,
+        currentPlayerUsername: data.currentPlayer?.username,
+        currentPlayerPlays: data.currentPlayer?.plays,
+        queueLength: data.queueLength,
+        isSpinning: isSpinning,
+        trackedQueueId: currentQueueId
+      });
 
       // If there's a processing player and we're not spinning, start a game
       if (data.currentPlayer && !isSpinning) {
         // Prevent duplicate processing of the same player
         if (currentQueueId === data.currentPlayer.id) {
+          console.log('⚠️  [GameCarousel] Already processing this player, skipping...', {
+            queueId: data.currentPlayer.id,
+            username: data.currentPlayer.username
+          });
           return; // Already processing this player
         }
 
         // Ensure slider items are loaded before proceeding
         if (sliderItems.length === 0) {
-          console.log('Waiting for slider items to load...');
+          console.log('⏳ [GameCarousel] Waiting for slider items to load...');
           return;
         }
+
+        console.log('🎮 [GameCarousel] Starting game for player:', {
+          queueId: data.currentPlayer.id,
+          username: data.currentPlayer.username,
+          plays: data.currentPlayer.plays
+        });
 
         setCurrentQueueId(data.currentPlayer.id);
 
         // Set spinning state immediately to prevent duplicate triggers
         setIsSpinning(true);
 
+        console.log('🎭 [GameCarousel] Showing player modal for:', data.currentPlayer.username);
+
         // Show player modal
         window.dispatchEvent(new CustomEvent('showPlayer', {
           detail: { username: data.currentPlayer.username }
         }));
 
+        console.log('⏰ [GameCarousel] Waiting 3 seconds before spin...');
+
         setTimeout(() => {
+          console.log('🎰 [GameCarousel] Triggering spin for queueId:', data.currentPlayer.id);
           spinCarousel(data.currentPlayer.id);
         }, 3000);
+      } else if (!data.currentPlayer) {
+        console.log('💤 [GameCarousel] No player in queue to process');
       }
     } catch (error) {
-      console.error('Error checking queue:', error);
+      console.error('❌ [GameCarousel] Error checking queue:', error);
     }
   };
 
   const spinCarousel = useCallback(async (queueId: number) => {
+    console.log('🎰 [GameCarousel.spinCarousel] Starting spin for queueId:', queueId);
+
     if (!carouselRef.current || sliderItems.length === 0) {
+      console.error('❌ [GameCarousel.spinCarousel] Cannot spin - missing carousel ref or slider items');
       // Reset state if we can't spin
       setIsSpinning(false);
       setCurrentQueueId(null);
@@ -154,6 +191,8 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
 
       setIsSpinning(true);
 
+      console.log('📡 [GameCarousel.spinCarousel] Calling /api/game/spin...');
+
       // Call spin API to determine outcome
       const spinRes = await fetch('/api/game/spin', {
         method: 'POST',
@@ -163,23 +202,35 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
 
       const spinData = await spinRes.json();
 
+      console.log('📥 [GameCarousel.spinCarousel] Spin API response:', {
+        success: spinData.success,
+        isWinner: spinData.isWinner,
+        remainingPlays: spinData.remainingPlays,
+        spinCount: spinData.spinCount
+      });
+
     // Calculate target position
     let targetIndex;
     if (spinData.isWinner && spinData.product) {
+      console.log('🏆 [GameCarousel.spinCarousel] WINNER! Finding product in slider:', spinData.product.title);
       // Find the winning product in the middle set
       const baseIndex = sliderItems.findIndex(item => item.id === spinData.product.id);
       if (baseIndex === -1) {
+        console.warn('⚠️  [GameCarousel.spinCarousel] Product not found in slider, using random position');
         targetIndex = sliderItems.length + Math.floor(Math.random() * sliderItems.length);
       } else {
         targetIndex = sliderItems.length + baseIndex; // Middle set
+        console.log('✅ [GameCarousel.spinCarousel] Product found at index:', baseIndex, '(targeting middle set)');
       }
     } else {
+      console.log('🎯 [GameCarousel.spinCarousel] Not a winner, selecting "Try Again" filler');
       // Find a "Try Again" filler in middle set
       const fillerIndices = sliderItems
         .map((item, idx) => item.type === 'filler' ? idx : -1)
         .filter(idx => idx !== -1);
       const randomFillerIndex = fillerIndices[Math.floor(Math.random() * fillerIndices.length)] || 0;
       targetIndex = sliderItems.length + randomFillerIndex;
+      console.log('✅ [GameCarousel.spinCarousel] Filler selected at index:', randomFillerIndex);
     }
 
     const itemWidth = 320; // Width of each item + gap
@@ -188,7 +239,15 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     // Calculate final position
     const targetPosition = -(targetIndex * itemWidth) + centerOffset;
 
+    console.log('🎯 [GameCarousel.spinCarousel] Animation target calculated:', {
+      targetIndex,
+      targetPosition,
+      itemWidth,
+      centerOffset
+    });
+
     // Create casino slot machine animation timeline
+    console.log('🎬 [GameCarousel.spinCarousel] Starting GSAP animation...');
     const timeline = gsap.timeline();
 
     // Phase 1: Fast acceleration (like pulling slot lever)
@@ -219,14 +278,19 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
       ease: 'elastic.out(0.8, 0.4)',
       onUpdate: updateItemTransforms,
       onComplete: () => {
+        console.log('🏁 [GameCarousel.spinCarousel] Animation complete!');
+
         setIsSpinning(false);
         setCurrentQueueId(null); // Reset so next player can be processed
+
+        console.log('🔓 [GameCarousel.spinCarousel] Spinning state reset, queue ID cleared');
 
         // Restart transform updates
         updateItemTransforms();
 
         // Show winner modal if applicable
         if (spinData.isWinner) {
+          console.log('🎉 [GameCarousel.spinCarousel] Showing winner modal');
           window.dispatchEvent(new CustomEvent('showWinner', {
             detail: {
               username: spinData.winner?.username,
@@ -236,35 +300,59 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
         }
 
         // Refresh slider items
+        console.log('🔄 [GameCarousel.spinCarousel] Refreshing slider items...');
         fetchSliderItems();
 
         // Check if same player has more plays
+        console.log('🔍 [GameCarousel.spinCarousel] Checking for remaining plays:', spinData.remainingPlays);
         if (spinData.remainingPlays > 0) {
+          console.log('🔄 [GameCarousel.spinCarousel] Player has more plays! Setting up next spin...', {
+            remainingPlays: spinData.remainingPlays,
+            isWinner: spinData.isWinner,
+            waitTime: spinData.isWinner ? 5000 : 0
+          });
+
           // Wait for winner modal to close (5s) or immediately if no winner
           const waitTime = spinData.isWinner ? 5000 : 0;
           setTimeout(async () => {
+            console.log('⏰ [GameCarousel.spinCarousel] Wait time elapsed, fetching current player...');
             // Fetch current player data to get username
             const currentRes = await fetch('/api/game/current');
             const currentData = await currentRes.json();
 
+            console.log('📊 [GameCarousel.spinCarousel] Current player data:', {
+              hasCurrentPlayer: !!currentData.currentPlayer,
+              playerId: currentData.currentPlayer?.id,
+              username: currentData.currentPlayer?.username,
+              plays: currentData.currentPlayer?.plays
+            });
+
             if (currentData.currentPlayer) {
+              console.log('🎭 [GameCarousel.spinCarousel] Showing player modal for next play');
               // Show player modal again
               window.dispatchEvent(new CustomEvent('showPlayer', {
                 detail: { username: currentData.currentPlayer.username }
               }));
 
               // Wait 3 seconds then spin again
+              console.log('⏰ [GameCarousel.spinCarousel] Waiting 3 seconds before next spin...');
               setTimeout(() => {
+                console.log('🔁 [GameCarousel.spinCarousel] Recursively calling spinCarousel for queueId:', queueId);
                 spinCarousel(queueId);
               }, 3000);
+            } else {
+              console.warn('⚠️  [GameCarousel.spinCarousel] No current player found for next spin!');
             }
           }, waitTime);
+        } else {
+          console.log('✅ [GameCarousel.spinCarousel] No more plays for this player, spin complete');
         }
       }
     });
     } catch (error) {
-      console.error('Error during spin:', error);
+      console.error('❌ [GameCarousel.spinCarousel] Error during spin:', error);
       // Reset state on error
+      console.log('🔄 [GameCarousel.spinCarousel] Resetting state due to error');
       setIsSpinning(false);
       setCurrentQueueId(null);
       updateItemTransforms();
