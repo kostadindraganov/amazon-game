@@ -13,7 +13,7 @@ export default function PlayerModal() {
 
       setTimeout(() => {
         setShow(false);
-      }, 2000);
+      }, 3000);
     }) as EventListener;
 
     window.addEventListener('showPlayer', handleShowPlayer);
