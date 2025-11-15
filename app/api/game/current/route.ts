@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 
 export async function GET() {
   try {
     // Get current processing game
-    const { data: processing, error: processingError } = await supabase
+    let { data: processing, error: processingError } = await supabase
       .from('game_queue')
       .select('*')
       .eq('status', 'processing')
@@ -13,6 +13,32 @@ export async function GET() {
       .maybeSingle();
 
     if (processingError) throw processingError;
+
+    // If no processing game, check for pending and auto-advance
+    if (!processing) {
+      const { data: nextPending, error: pendingError } = await supabaseAdmin
+        .from('game_queue')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (pendingError) throw pendingError;
+
+      if (nextPending) {
+        // Move pending to processing
+        const { data: updated, error: updateError } = await supabaseAdmin
+          .from('game_queue')
+          .update({ status: 'processing' })
+          .eq('id', nextPending.id)
+          .select()
+          .single();
+
+        if (updateError) throw updateError;
+        processing = updated;
+      }
+    }
 
     // Get pending queue count
     const { count: pendingCount, error: countError } = await supabase
