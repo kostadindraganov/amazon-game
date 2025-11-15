@@ -13,8 +13,11 @@ For comprehensive project documentation, see:
 | **[GAME_FLOW.md](./GAME_FLOW.md)** | Visual flow diagrams and game logic explanations |
 | **[TECHNICAL_ARCHITECTURE.md](./TECHNICAL_ARCHITECTURE.md)** | System architecture, data flow, and component interactions |
 | **[IMPLEMENTATION_CHECKLIST.md](./IMPLEMENTATION_CHECKLIST.md)** | Step-by-step implementation guide for developers |
+| **[CONTRIBUTING.md](./CONTRIBUTING.md)** | **🚨 REQUIRED READING** - Guidelines for contributing and updating docs before PRs |
 
 **💡 Tip:** If you're new to the project, start with [IMPLEMENTATION_CHECKLIST.md](./IMPLEMENTATION_CHECKLIST.md) for a guided walkthrough.
+
+**⚠️ IMPORTANT:** Before creating any PR, read [CONTRIBUTING.md](./CONTRIBUTING.md) and update all relevant documentation!
 
 ## 🎯 Features
 
@@ -547,6 +550,37 @@ Make sure to add all `.env.local` variables to your hosting platform:
 - [Supabase Documentation](https://supabase.com/docs)
 - [Cloudflare R2 Documentation](https://developers.cloudflare.com/r2/)
 - [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+
+## ⚠️ Important Development Notes
+
+### Documentation Maintenance
+
+**🚨 CRITICAL: Before Creating Any Pull Request**
+
+If you make changes to the project, you **MUST** update the relevant documentation files:
+
+1. **Update PRD.md** - If you change features, APIs, database schema, or requirements
+2. **Update GAME_FLOW.md** - If you modify game logic or flows
+3. **Update TECHNICAL_ARCHITECTURE.md** - If you change architecture or data flow
+4. **Update PROJECT_STRUCTURE.md** - If you add/remove files or restructure folders
+5. **Update IMPLEMENTATION_CHECKLIST.md** - If you change implementation steps
+6. **Update README.md** - If you change setup, deployment, or API endpoints
+
+**Documentation Review Checklist Before PR:**
+- [ ] All affected documentation files updated
+- [ ] PRD.md reflects current features
+- [ ] Code structure matches PROJECT_STRUCTURE.md
+- [ ] Game flows documented in GAME_FLOW.md
+- [ ] API changes reflected in README and PRD
+
+### UI Reminder
+
+**⚠️ TODO: Remove Bottom Spin Button**
+
+Before finalizing the UI, remember to:
+- Remove the manual "Spin" button from the homepage bottom
+- The game should primarily be triggered via API calls
+- Keep the admin testing functionality if needed, but remove from production UI
 
 ## 📄 License
 
