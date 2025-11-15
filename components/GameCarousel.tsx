@@ -15,7 +15,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
   const containerRef = useRef<HTMLDivElement>(null);
   const [sliderItems, setSliderItems] = useState<SliderItem[]>([]);
   const [currentQueueId, setCurrentQueueId] = useState<number | null>(null);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | undefined>(undefined);
 
   // Fetch slider items
   useEffect(() => {

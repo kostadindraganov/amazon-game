@@ -33,6 +33,12 @@ export default function AdminLayout({
                 Winners
               </Link>
               <Link
+                href="/admin/queues"
+                className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 transition-colors"
+              >
+                Queues
+              </Link>
+              <Link
                 href="/"
                 className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 transition-colors"
               >
