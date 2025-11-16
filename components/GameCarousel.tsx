@@ -41,58 +41,35 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     ? [...sliderItems, ...sliderItems, ...sliderItems]
     : [];
 
-  // Update 3D transforms based on position
+  // Simple update for roulette-style carousel (no 3D transforms needed)
   const updateItemTransforms = useCallback(() => {
-    if (!carouselRef.current || !containerRef.current) return;
-
-    const items = carouselRef.current.children;
-    const containerCenter = containerRef.current.offsetWidth / 2;
-
-    Array.from(items).forEach((item) => {
-      const htmlItem = item as HTMLElement;
-      const itemRect = htmlItem.getBoundingClientRect();
-      const containerRect = containerRef.current!.getBoundingClientRect();
-
-      // Calculate distance from center
-      const itemCenter = itemRect.left + itemRect.width / 2 - containerRect.left;
-      const distanceFromCenter = Math.abs(itemCenter - containerCenter);
-      const maxDistance = containerCenter;
-      const normalizedDistance = Math.min(distanceFromCenter / maxDistance, 1);
-
-      // Scale: center = 1.4, sides = 0.6
-      const scale = 1.4 - (normalizedDistance * 0.8);
-
-      // Opacity: center = 1, sides = 0.3
-      const opacity = 1 - (normalizedDistance * 0.7);
-
-      // 3D rotation
-      const rotationY = (itemCenter - containerCenter) / 10;
-      const translateZ = (1 - normalizedDistance) * 100;
-
-      gsap.set(htmlItem, {
-        scale,
-        opacity,
-        rotationY,
-        z: translateZ,
-        transformOrigin: 'center center'
-      });
-    });
-
-    animationFrameRef.current = requestAnimationFrame(updateItemTransforms);
+    // No transforms needed for the 2D roulette style
+    // Animation is handled purely by GSAP's x transform
   }, []);
 
-  // Start transform updates when items are loaded
+  // Set initial position to show cards on both sides
   useEffect(() => {
-    if (infiniteItems.length > 0 && !isSpinning) {
-      updateItemTransforms();
-    }
+    if (carouselRef.current && infiniteItems.length > 0) {
+      // Position the carousel so that the middle set of items is centered
+      // This will show cards on both left and right
+      const itemWidth = 244; // 220px card + 24px gap
+      const middleSetOffset = sliderItems.length * itemWidth;
+      const centerOffset = window.innerWidth / 2 - itemWidth / 2;
+      const initialX = -middleSetOffset + centerOffset;
 
+      gsap.set(carouselRef.current, { x: initialX });
+    }
+  }, [infiniteItems.length, sliderItems.length]);
+
+  // No continuous transform updates needed for 2D roulette style
+  useEffect(() => {
+    // Cleanup function for animation frame if needed
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [infiniteItems.length, isSpinning, updateItemTransforms]);
+  }, []);
 
   const checkForNextPlayer = useCallback(async () => {
     try {
@@ -191,11 +168,6 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     }
 
     try {
-      // Stop transform updates during spin
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-
       setIsSpinning(true);
 
       console.log('📡 [GameCarousel.spinCarousel] Calling /api/game/spin...');
@@ -240,7 +212,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
       console.log('✅ [GameCarousel.spinCarousel] Filler selected at index:', randomFillerIndex);
     }
 
-    const itemWidth = 320; // Width of each item + gap
+    const itemWidth = 244; // Width of each item (220px) + gap (24px)
     const centerOffset = (window.innerWidth / 2) - (itemWidth / 2);
 
     // Calculate final position
@@ -283,7 +255,6 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
       x: targetPosition,
       duration: 1.2,
       ease: 'elastic.out(0.8, 0.4)',
-      onUpdate: updateItemTransforms,
       onComplete: () => {
         console.log('🏁 [GameCarousel.spinCarousel] Animation complete!');
 
@@ -291,9 +262,6 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
         setCurrentQueueId(null); // Reset so next player can be processed
 
         console.log('🔓 [GameCarousel.spinCarousel] Spinning state reset, queue ID cleared');
-
-        // Restart transform updates
-        updateItemTransforms();
 
         // Show winner modal if applicable
         if (spinData.isWinner) {
@@ -362,7 +330,6 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
       console.log('🔄 [GameCarousel.spinCarousel] Resetting state due to error');
       setIsSpinning(false);
       setCurrentQueueId(null);
-      updateItemTransforms();
     }
   }, [sliderItems, setIsSpinning, updateItemTransforms]);
 
@@ -376,88 +343,121 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
 
   return (
     <div className="relative mb-16">
-      {/* Carousel Container with 3D Perspective */}
+      {/* Roulette Wrapper - CodePen Style */}
       <div
-        ref={containerRef}
-        className="overflow-hidden relative h-[500px] neon-border rounded-xl bg-black/50 backdrop-blur-sm"
+        className="relative overflow-hidden"
         style={{
-          perspective: '2000px',
-          perspectiveOrigin: 'center center'
+          background: '#191B28',
+          height: '400px',
+          borderRadius: '12px',
         }}
       >
-        {/* Center indicator line */}
-        <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-casino-gold/50 z-20 transform -translate-x-1/2 shadow-lg shadow-casino-gold/50" />
-
-        {/* Gradient overlays for depth */}
-        <div className="absolute left-0 top-0 bottom-0 w-1/4 bg-gradient-to-r from-black via-black/80 to-transparent z-10 pointer-events-none" />
-        <div className="absolute right-0 top-0 bottom-0 w-1/4 bg-gradient-to-l from-black via-black/80 to-transparent z-10 pointer-events-none" />
-
+        {/* Center Selector Line */}
         <div
-          ref={carouselRef}
-          className="flex gap-12 absolute top-1/2 transform -translate-y-1/2"
+          className="absolute top-0 bottom-0 z-20"
           style={{
             left: '50%',
-            transformStyle: 'preserve-3d',
+            width: '3px',
+            backgroundColor: '#666',
+            transform: 'translateX(-1.5px)',
           }}
-        >
-          {infiniteItems.map((item, index) => {
-            const isFiller = item.type === 'filler';
+        />
 
-            return (
-              <div
-                key={`${item.id}-${index}`}
-                className="relative flex-shrink-0"
-                style={{
-                  width: '280px',
-                  transformStyle: 'preserve-3d',
-                }}
-              >
-                <div className={`
-                  rounded-xl overflow-hidden shadow-2xl
-                  ${isFiller
-                    ? 'bg-gradient-to-br from-gray-900 to-gray-800 border-4 border-red-600/50'
-                    : 'bg-gradient-to-br from-purple-600 to-pink-600 border-4 border-casino-gold'
-                  }
-                `}>
-                  <div className="aspect-square relative bg-white">
-                    {isFiller ? (
-                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
-                        <span className="text-3xl font-bold text-red-500 text-center px-4">
-                          {item.title}
-                        </span>
+        {/* Gradient Overlays */}
+        <div
+          className="absolute left-0 top-0 bottom-0 z-10 pointer-events-none"
+          style={{
+            width: '300px',
+            background: 'linear-gradient(to right, #191B28 0%, transparent 100%)',
+          }}
+        />
+        <div
+          className="absolute right-0 top-0 bottom-0 z-10 pointer-events-none"
+          style={{
+            width: '300px',
+            background: 'linear-gradient(to left, #191B28 0%, transparent 100%)',
+          }}
+        />
+
+        {/* Wheel Container */}
+        <div
+          ref={containerRef}
+          className="absolute inset-0 flex items-center"
+        >
+          <div
+            ref={carouselRef}
+            className="flex gap-6 absolute"
+            style={{
+              left: '50%',
+              height: '100%',
+              alignItems: 'center',
+            }}
+          >
+            {infiniteItems.map((item, index) => {
+              const isFiller = item.type === 'filler';
+
+              // Assign colors based on type - roulette style
+              let cardColor = '#2D3035'; // black (default for products)
+              if (isFiller) {
+                cardColor = '#F95146'; // red for fillers
+              } else if (index % 3 === 0) {
+                cardColor = '#00C74D'; // green for some products
+              }
+
+              return (
+                <div
+                  key={`${item.id}-${index}`}
+                  className="flex-shrink-0 rounded-lg overflow-hidden flex flex-col items-center justify-center"
+                  style={{
+                    width: '220px',
+                    height: '320px',
+                    backgroundColor: cardColor,
+                    border: '2px solid rgba(255, 255, 255, 0.1)',
+                  }}
+                >
+                  {isFiller ? (
+                    <div className="text-center px-4">
+                      <div className="text-white font-bold text-2xl leading-tight">
+                        {item.title}
                       </div>
-                    ) : (
-                      <Image
-                        src={item.image_url}
-                        alt={item.title}
-                        fill
-                        className="object-contain p-6"
-                        unoptimized
-                      />
-                    )}
-                  </div>
-                  <div className="p-4 text-center bg-black/80">
-                    <h3 className="text-lg font-bold text-white truncate">
-                      {item.title}
-                    </h3>
-                    {!isFiller && (
-                      <p className="text-casino-gold text-2xl font-bold mt-1">
+                    </div>
+                  ) : (
+                    <>
+                      <div className="relative w-32 h-32 mb-4">
+                        <Image
+                          src={item.image_url}
+                          alt={item.title}
+                          fill
+                          className="object-contain"
+                          unoptimized
+                        />
+                      </div>
+                      <div className="text-white text-base font-semibold text-center px-3 leading-tight">
+                        {item.title}
+                      </div>
+                      <div className="text-yellow-400 text-xl font-bold mt-2">
                         {item.price} лв
-                      </p>
-                    )}
-                  </div>
+                      </div>
+                    </>
+                  )}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
 
       {/* Status indicator */}
       {isSpinning && (
-        <div className="text-center mt-8">
-          <div className="inline-block px-8 py-4 bg-gradient-to-r from-casino-purple to-casino-neon rounded-full neon-border">
-            <span className="text-2xl font-bold animate-pulse">🎰 SPINNING...</span>
+        <div className="text-center mt-6">
+          <div
+            className="inline-block px-6 py-3 rounded-full"
+            style={{
+              background: 'linear-gradient(to right, #F95146, #00C74D)',
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+            }}
+          >
+            <span className="text-xl font-bold text-white animate-pulse">🎰 SPINNING...</span>
           </div>
         </div>
       )}
