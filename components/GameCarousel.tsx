@@ -47,6 +47,20 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     // Animation is handled purely by GSAP's x transform
   }, []);
 
+  // Set initial position to show cards on both sides
+  useEffect(() => {
+    if (carouselRef.current && infiniteItems.length > 0) {
+      // Position the carousel so that the middle set of items is centered
+      // This will show cards on both left and right
+      const itemWidth = 244; // 220px card + 24px gap
+      const middleSetOffset = sliderItems.length * itemWidth;
+      const centerOffset = window.innerWidth / 2 - itemWidth / 2;
+      const initialX = -middleSetOffset + centerOffset;
+
+      gsap.set(carouselRef.current, { x: initialX });
+    }
+  }, [infiniteItems.length, sliderItems.length]);
+
   // No continuous transform updates needed for 2D roulette style
   useEffect(() => {
     // Cleanup function for animation frame if needed
@@ -198,7 +212,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
       console.log('✅ [GameCarousel.spinCarousel] Filler selected at index:', randomFillerIndex);
     }
 
-    const itemWidth = 132; // Width of each item (120px) + gap (12px)
+    const itemWidth = 244; // Width of each item (220px) + gap (24px)
     const centerOffset = (window.innerWidth / 2) - (itemWidth / 2);
 
     // Calculate final position
@@ -334,7 +348,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
         className="relative overflow-hidden"
         style={{
           background: '#191B28',
-          height: '200px',
+          height: '400px',
           borderRadius: '12px',
         }}
       >
@@ -353,14 +367,14 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
         <div
           className="absolute left-0 top-0 bottom-0 z-10 pointer-events-none"
           style={{
-            width: '200px',
+            width: '300px',
             background: 'linear-gradient(to right, #191B28 0%, transparent 100%)',
           }}
         />
         <div
           className="absolute right-0 top-0 bottom-0 z-10 pointer-events-none"
           style={{
-            width: '200px',
+            width: '300px',
             background: 'linear-gradient(to left, #191B28 0%, transparent 100%)',
           }}
         />
@@ -372,7 +386,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
         >
           <div
             ref={carouselRef}
-            className="flex gap-3 absolute"
+            className="flex gap-6 absolute"
             style={{
               left: '50%',
               height: '100%',
@@ -395,21 +409,21 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
                   key={`${item.id}-${index}`}
                   className="flex-shrink-0 rounded-lg overflow-hidden flex flex-col items-center justify-center"
                   style={{
-                    width: '120px',
-                    height: '140px',
+                    width: '220px',
+                    height: '320px',
                     backgroundColor: cardColor,
                     border: '2px solid rgba(255, 255, 255, 0.1)',
                   }}
                 >
                   {isFiller ? (
-                    <div className="text-center px-2">
-                      <div className="text-white font-bold text-sm leading-tight">
+                    <div className="text-center px-4">
+                      <div className="text-white font-bold text-2xl leading-tight">
                         {item.title}
                       </div>
                     </div>
                   ) : (
                     <>
-                      <div className="relative w-16 h-16 mb-2">
+                      <div className="relative w-32 h-32 mb-4">
                         <Image
                           src={item.image_url}
                           alt={item.title}
@@ -418,10 +432,10 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
                           unoptimized
                         />
                       </div>
-                      <div className="text-white text-xs font-semibold text-center px-2 leading-tight">
+                      <div className="text-white text-base font-semibold text-center px-3 leading-tight">
                         {item.title}
                       </div>
-                      <div className="text-yellow-400 text-sm font-bold mt-1">
+                      <div className="text-yellow-400 text-xl font-bold mt-2">
                         {item.price} лв
                       </div>
                     </>
