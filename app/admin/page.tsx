@@ -281,6 +281,7 @@ export default function AdminProducts() {
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Image</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Title</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Price</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">WinAt</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Status</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Actions</th>
               </tr>
@@ -288,13 +289,13 @@ export default function AdminProducts() {
             <tbody className="divide-y divide-gray-700">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-400">
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
                     Loading...
                   </td>
                 </tr>
               ) : products.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-400">
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
                     No products found
                   </td>
                 </tr>
@@ -315,6 +316,9 @@ export default function AdminProducts() {
                     <td className="px-6 py-4 text-white">{product.title}</td>
                     <td className="px-6 py-4 text-casino-gold font-bold">
                       {product.price} лв
+                    </td>
+                    <td className="px-6 py-4 text-white">
+                      {product.win_at_spin_count ?? '-'}
                     </td>
                     <td className="px-6 py-4">
                       <select
