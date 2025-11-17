@@ -269,21 +269,62 @@ export default function AdminProducts() {
     <div>
       <h1 className="text-4xl font-bold mb-8 text-casino-gold">Product Management</h1>
 
-      {/* Spin State Count */}
-      <div className="bg-gradient-to-r from-purple-900 to-pink-900 p-6 rounded-xl mb-6 border border-purple-500">
-        <h2 className="text-xl font-bold mb-2 text-white">Current Spin State</h2>
-        <div className="flex items-center gap-4">
-          <div className="text-4xl font-bold text-casino-gold">
-            {spinState ? spinState.current_spin_count : '...'}
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        {/* Spin State Count */}
+        <div className="bg-gradient-to-r from-purple-900 to-pink-900 p-6 rounded-xl border border-purple-500">
+          <h2 className="text-xl font-bold mb-2 text-white">Current Spin State</h2>
+          <div className="flex items-center gap-4">
+            <div className="text-4xl font-bold text-casino-gold">
+              {spinState ? spinState.current_spin_count : '...'}
+            </div>
+            <div className="text-gray-300">
+              <div className="text-sm">Total Spins</div>
+              <button
+                onClick={fetchSpinState}
+                className="text-xs text-purple-300 hover:text-purple-200 underline"
+              >
+                Refresh
+              </button>
+            </div>
           </div>
-          <div className="text-gray-300">
-            <div className="text-sm">Total Spins</div>
-            <button
-              onClick={fetchSpinState}
-              className="text-xs text-purple-300 hover:text-purple-200 underline"
-            >
-              Refresh
-            </button>
+        </div>
+
+        {/* Active Products Count */}
+        <div className="bg-gradient-to-r from-green-900 to-emerald-900 p-6 rounded-xl border border-green-500">
+          <h2 className="text-xl font-bold mb-2 text-white">Active Products</h2>
+          <div className="flex items-center gap-4">
+            <div className="text-4xl font-bold text-casino-gold">
+              {products.filter(p => p.status === 'active').length}
+            </div>
+            <div className="text-gray-300">
+              <div className="text-sm">Available</div>
+              <button
+                onClick={fetchProducts}
+                className="text-xs text-green-300 hover:text-green-200 underline"
+              >
+                Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Won Products Count */}
+        <div className="bg-gradient-to-r from-red-900 to-rose-900 p-6 rounded-xl border border-red-500">
+          <h2 className="text-xl font-bold mb-2 text-white">Won Products</h2>
+          <div className="flex items-center gap-4">
+            <div className="text-4xl font-bold text-casino-gold">
+              {products.filter(p => p.status === 'won').length}
+            </div>
+            <div className="text-gray-300">
+              <div className="text-sm">Awarded</div>
+              <button
+                onClick={fetchProducts}
+                className="text-xs text-red-300 hover:text-red-200 underline"
+              >
+                Refresh
+              </button>
+            </div>
           </div>
         </div>
       </div>
