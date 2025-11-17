@@ -30,7 +30,7 @@ export default function Home() {
     <main className="min-h-screen casino-gradient overflow-hidden">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-4">
           <h1 className="text-6xl font-bold mb-4 neon-text animate-glow">
             🎰 
           </h1>
