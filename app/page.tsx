@@ -32,7 +32,7 @@ export default function Home() {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-6xl font-bold mb-4 neon-text animate-glow">
-            🎰 CASINO WHEEL 🎰
+            🎰 
           </h1>
           <p className="text-2xl text-casino-gold font-semibold">
             {settings.headline_text || `Играй за награди като изпратиш ${settings.min_points_for_play} точки`}
