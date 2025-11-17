@@ -13,6 +13,7 @@ export default function AdminProducts() {
   // Form state
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
+  const [winAtSpinCount, setWinAtSpinCount] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState('');
 
@@ -103,7 +104,8 @@ export default function AdminProducts() {
         body: JSON.stringify({
           title,
           price: parseFloat(price),
-          image_url: uploadedImageUrl
+          image_url: uploadedImageUrl,
+          win_at_spin_count: winAtSpinCount ? parseInt(winAtSpinCount) : undefined
         })
       });
 
@@ -112,6 +114,7 @@ export default function AdminProducts() {
       alert('Product created successfully!');
       setTitle('');
       setPrice('');
+      setWinAtSpinCount('');
       setUploadedImageUrl('');
       fetchProducts();
     } catch (error) {
@@ -212,6 +215,23 @@ export default function AdminProducts() {
               placeholder="1600"
               required
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-300">
+              Win at Spin Count
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={winAtSpinCount}
+              onChange={(e) => setWinAtSpinCount(e.target.value)}
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="100"
+            />
+            <p className="text-sm text-gray-400 mt-1">
+              This product will be awarded at this specific spin count (optional)
+            </p>
           </div>
 
           <div>

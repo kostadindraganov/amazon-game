@@ -10,7 +10,6 @@ export default function AdminSettings() {
 
   // Form state
   const [sliderItemCount, setSliderItemCount] = useState(100);
-  const [spinCountToWin, setSpinCountToWin] = useState(100);
   const [minPointsForPlay, setMinPointsForPlay] = useState(300);
   const [headlineText, setHeadlineText] = useState('');
 
@@ -27,7 +26,6 @@ export default function AdminSettings() {
 
       // Set form values
       setSliderItemCount(data.slider_item_count);
-      setSpinCountToWin(data.spin_count_to_win);
       setMinPointsForPlay(data.min_points_for_play);
       setHeadlineText(data.headline_text);
     } catch (error) {
@@ -48,7 +46,6 @@ export default function AdminSettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           slider_item_count: sliderItemCount,
-          spin_count_to_win: spinCountToWin,
           min_points_for_play: minPointsForPlay,
           headline_text: headlineText
         })
@@ -90,23 +87,6 @@ export default function AdminSettings() {
             />
             <p className="text-sm text-gray-400 mt-1">
               Total number of items in the slider (including "Try Again" fillers)
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-300">
-              Win Frequency (Spin Count)
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={spinCountToWin}
-              onChange={(e) => setSpinCountToWin(parseInt(e.target.value))}
-              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              required
-            />
-            <p className="text-sm text-gray-400 mt-1">
-              A prize is awarded every N spins (e.g., 100 = every 100th spin wins)
             </p>
           </div>
 
@@ -161,10 +141,6 @@ export default function AdminSettings() {
               <div className="bg-gray-900 p-4 rounded-lg">
                 <p className="text-gray-400">Slider Items</p>
                 <p className="text-2xl font-bold text-casino-gold">{settings.slider_item_count}</p>
-              </div>
-              <div className="bg-gray-900 p-4 rounded-lg">
-                <p className="text-gray-400">Win Every N Spins</p>
-                <p className="text-2xl font-bold text-casino-gold">{settings.spin_count_to_win}</p>
               </div>
               <div className="bg-gray-900 p-4 rounded-lg">
                 <p className="text-gray-400">Min Points</p>

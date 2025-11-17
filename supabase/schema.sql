@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS products (
   title TEXT NOT NULL,
   price NUMERIC NOT NULL CHECK (price >= 0),
   image_url TEXT NOT NULL,
+  win_at_spin_count INT CHECK (win_at_spin_count > 0),
   status TEXT DEFAULT 'active' CHECK (status IN ('active', 'won')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   won_at TIMESTAMP WITH TIME ZONE

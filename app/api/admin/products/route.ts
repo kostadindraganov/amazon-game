@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, price, image_url } = body;
+    const { title, price, image_url, win_at_spin_count } = body;
 
     if (!title || typeof price !== 'number' || !image_url) {
       return NextResponse.json(
@@ -45,14 +45,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const insertData: any = {
+      title,
+      price,
+      image_url,
+      status: 'active'
+    };
+
+    if (win_at_spin_count !== undefined && win_at_spin_count !== null) {
+      insertData.win_at_spin_count = win_at_spin_count;
+    }
+
     const { data, error } = await supabaseAdmin
       .from('products')
-      .insert({
-        title,
-        price,
-        image_url,
-        status: 'active'
-      })
+      .insert(insertData)
       .select()
       .single();
 
