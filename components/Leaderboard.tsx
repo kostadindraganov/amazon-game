@@ -52,48 +52,52 @@ export default function Leaderboard() {
             key={currentWinner.id}
             className="flip-card animate-flip-vertical"
           >
-            {/* Label on top */}
-            <div className="text-center mb-2">
-              <p className="text-base md:text-lg font-medium text-white/80">
-                ПОСЛЕДНИ ПОБЕДИТЕЛИ
-              </p>
-            </div>
-
-            {/* Winner Info */}
-            <div className="flex items-center justify-center gap-4 md:gap-6 bg-black/30 backdrop-blur-sm rounded-lg p-3 md:p-4 border border-white/10">
-              {/* Product Image */}
-              <div className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 relative bg-white/5 rounded-lg overflow-hidden border border-white/20">
-                {currentWinner.product_image_url ? (
-                  <Image
-                    src={currentWinner.product_image_url}
-                    alt={currentWinner.product_title}
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-3xl md:text-4xl">🎁</span>
-                  </div>
-                )}
+            {/* Winner Info - Equal Width Columns */}
+            <div className="grid grid-cols-5 gap-2 md:gap-4 items-center bg-black/30 backdrop-blur-sm rounded-lg p-3 md:p-4 border border-white/10">
+              {/* Column 1: Product Image */}
+              <div className="flex justify-center">
+                <div className="w-16 h-16 md:w-20 md:h-20 relative bg-white/5 rounded-lg overflow-hidden border border-white/20">
+                  {currentWinner.product_image_url ? (
+                    <Image
+                      src={currentWinner.product_image_url}
+                      alt={currentWinner.product_title}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <span className="text-3xl md:text-4xl">🎁</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Winner Details */}
-              <div className="flex-1 min-w-0">
-                <p className="text-lg md:text-xl font-bold text-white truncate">
-                  {currentWinner.username}
-                </p>
-                <p className="text-sm md:text-base text-white/70 truncate">
+              {/* Column 2: Product Title */}
+              <div className="text-center px-2">
+                <p className="text-xs md:text-base text-white/90 font-medium truncate">
                   {currentWinner.product_title}
                 </p>
               </div>
 
-              {/* Price */}
-              <div className="flex-shrink-0 text-right">
-                <p className="text-xl md:text-2xl font-bold text-white whitespace-nowrap">
+              {/* Column 3: Winner Username */}
+              <div className="text-center px-2">
+                <p className="text-xs md:text-sm text-white/70 mb-1">ПОБЕДИТЕЛ:</p>
+                <p className="text-sm md:text-lg font-bold text-white truncate">
+                  {currentWinner.username}
+                </p>
+              </div>
+
+              {/* Column 4: Price */}
+              <div className="text-center px-2">
+                <p className="text-base md:text-xl font-bold text-white whitespace-nowrap">
                   {currentWinner.product_price} лв
                 </p>
-                <p className="text-xs text-white/50 hidden md:block">
+              </div>
+
+              {/* Column 5: Date */}
+              <div className="text-center px-2">
+                <p className="text-xs md:text-sm text-white/70">
                   {new Date(currentWinner.won_at).toLocaleString('bg-BG', {
                     month: 'short',
                     day: 'numeric',
