@@ -130,6 +130,50 @@ class TikTokLiveService {
         } else {
           console.log(`🎁 Gift received: ${data.uniqueId} sent ${data.giftName} x${data.repeatCount} (${totalPoints} points)`);
         }
+
+        // Fetch minimum points required to play from settings
+        const { data: settings, error: settingsError } = await supabaseAdmin
+          .from('settings')
+          .select('min_points_for_play')
+          .eq('id', 1)
+          .single();
+
+        if (settingsError) {
+          console.error('❌ Error fetching settings:', settingsError);
+          return;
+        }
+
+        const minPointsForPlay = settings.min_points_for_play;
+
+        // Check if gift points meet or exceed minimum required points
+        if (totalPoints >= minPointsForPlay) {
+          console.log(`✅ Gift points (${totalPoints}) meet minimum (${minPointsForPlay}). Triggering game...`);
+
+          // Trigger game by calling /api/game/play endpoint
+          const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+          const username = data.nickname || data.uniqueId || 'Unknown';
+
+          const response = await fetch(`${siteUrl}/api/game/play`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              username: username,
+              points: totalPoints,
+            }),
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            console.log(`🎮 Game triggered for ${username}:`, result);
+          } else {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            console.error(`❌ Failed to trigger game:`, errorData);
+          }
+        } else {
+          console.log(`ℹ️ Gift points (${totalPoints}) below minimum (${minPointsForPlay}). Game not triggered.`);
+        }
       } catch (error) {
         console.error('❌ Error processing gift event:', error);
       }
