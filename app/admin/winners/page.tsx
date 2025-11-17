@@ -18,7 +18,7 @@ export default function AdminWinners() {
   const fetchWinners = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/winners?page=${page}&limit=50`);
+      const res = await fetch(`/api/admin/winners?page=${page}&limit=30`);
       const data = await res.json();
       setWinners(data.winners);
       setTotalPages(data.totalPages);
@@ -28,6 +28,28 @@ export default function AdminWinners() {
       alert('Failed to fetch winners');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (winnerId: string, username: string) => {
+    if (!confirm(`Are you sure you want to delete winner "${username}"?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/winners?id=${winnerId}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to delete winner');
+      }
+
+      // Refresh the winners list
+      await fetchWinners();
+    } catch (error) {
+      console.error('Error deleting winner:', error);
+      alert('Failed to delete winner');
     }
   };
 
@@ -51,18 +73,19 @@ export default function AdminWinners() {
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Product</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Price</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Won At</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-400">
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
                     Loading...
                   </td>
                 </tr>
               ) : winners.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-400">
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
                     No winners yet
                   </td>
                 </tr>
@@ -95,6 +118,14 @@ export default function AdminWinners() {
                     </td>
                     <td className="px-6 py-4 text-gray-300 text-sm">
                       {new Date(winner.won_at).toLocaleString('bg-BG')}
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => handleDelete(winner.id, winner.username)}
+                        className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))

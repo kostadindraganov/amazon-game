@@ -5,7 +5,7 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const limit = parseInt(searchParams.get('limit') || '30');
     const offset = (page - 1) * limit;
 
     const { data, error, count } = await supabaseAdmin
@@ -28,6 +28,36 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching winners:', error);
     return NextResponse.json(
       { error: 'Failed to fetch winners' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Winner ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const { error } = await supabaseAdmin
+      .from('winners')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+
+  } catch (error) {
+    console.error('Error deleting winner:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete winner' },
       { status: 500 }
     );
   }
