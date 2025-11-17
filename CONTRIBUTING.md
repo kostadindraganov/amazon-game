@@ -30,6 +30,44 @@ For **ANY** change, review these files and update if affected:
 | **IMPLEMENTATION_CHECKLIST.md** | Changes to setup steps, deployment process, dependencies |
 | **README.md** | Changes to setup, API endpoints, deployment, troubleshooting |
 
+### 3. Automated Documentation Support
+
+This project has **three layers of automated documentation support**:
+
+#### Layer 1: Claude Code Rules (`.claude/rules.md`)
+- **Automatic reminders** when making code changes
+- Acts as "memory" for documentation requirements
+- Loaded automatically by Claude Code
+
+#### Layer 2: Slash Command (`.claude/commands/update-docs.md`)
+- **Guided documentation updates** via `/update-docs`
+- Analyzes your changes and identifies required docs
+- Walks you through updating each file
+
+**Usage:**
+```bash
+# In Claude Code:
+/update-docs
+```
+
+#### Layer 3: Pre-Commit Hook (`.git/hooks/pre-commit`)
+- **Blocks commits** if code changes lack documentation
+- Shows exactly which docs need updating
+- Provides clear guidance on next steps
+
+**The hook will:**
+✅ Allow commits with only documentation changes
+✅ Allow commits when all required docs are updated
+❌ Block commits when code changes lack documentation
+⚠️  Warn about recommended documentation updates
+
+**To bypass (not recommended):**
+```bash
+git commit --no-verify
+```
+
+**Learn more:** See `.claude/README.md` for complete documentation on automated support
+
 ---
 
 ## ✅ Pre-PR Checklist
