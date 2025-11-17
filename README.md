@@ -1,4 +1,4 @@
-# 🎰 Casino Wheel Game - Next.js 16
+# 🎰 Amazon Game - Next.js 16
 
 A horizontal Wheel-of-Fortune style casino game built with Next.js 16, TypeScript, GSAP, Tailwind CSS, Supabase, and Cloudflare R2.
 
