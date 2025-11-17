@@ -74,26 +74,31 @@ class TikTokLiveService {
   }
 
   async disconnect(): Promise<void> {
-    if (this.connection) {
-      try {
+    try {
+      // Disconnect the connection if it exists
+      if (this.connection) {
         this.connection.disconnect();
         this.connection = null;
         this.username = null;
-
-        // Update status to disconnected
-        await supabaseAdmin
-          .from('tiktok_settings')
-          .update({
-            is_connected: false,
-            connection_status: 'disconnected',
-            error_message: null,
-          })
-          .eq('id', 1);
-
-        console.log('✅ Disconnected from TikTok Live');
-      } catch (error) {
-        console.error('❌ Error disconnecting:', error);
       }
+
+      // Always update the database to ensure consistent state
+      // This handles cases where connection is null but DB shows connected
+      // (e.g., after server restart or connection cleanup)
+      await supabaseAdmin
+        .from('tiktok_settings')
+        .update({
+          is_connected: false,
+          connection_status: 'disconnected',
+          error_message: null,
+        })
+        .eq('id', 1);
+
+      console.log('✅ Disconnected from TikTok Live');
+    } catch (error) {
+      console.error('❌ Error disconnecting:', error);
+      // Re-throw error so API endpoint can return proper error response
+      throw error;
     }
   }
 
