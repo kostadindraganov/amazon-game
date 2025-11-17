@@ -29,4 +29,33 @@ body {
   .casino-gradient {
     background: linear-gradient(135deg, #581C87 0%, #0F0A1E 50%, #581C87 100%);
   }
+
+  /* Vertical Flip Clock Animation */
+  .flip-container {
+    perspective: 1000px;
+  }
+
+  .flip-card {
+    animation: flipVertical 0.6s ease-in-out;
+    transform-style: preserve-3d;
+  }
+
+  @keyframes flipVertical {
+    0% {
+      transform: rotateX(90deg);
+      opacity: 0;
+    }
+    50% {
+      transform: rotateX(-10deg);
+      opacity: 0.5;
+    }
+    100% {
+      transform: rotateX(0deg);
+      opacity: 1;
+    }
+  }
+
+  .animate-flip-vertical {
+    animation: flipVertical 0.6s ease-in-out;
+  }
 }
