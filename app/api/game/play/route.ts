@@ -34,6 +34,22 @@ export async function POST(request: NextRequest) {
     // Calculate number of plays
     const plays = Math.floor(points / minPoints);
 
+    // Check current queue count (only count pending and processing entries)
+    const { count: queueCount, error: countError } = await supabase
+      .from('game_queue')
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['pending', 'processing']);
+
+    if (countError) throw countError;
+
+    // Limit queue to 20 active entries
+    if (queueCount && queueCount >= 20) {
+      return NextResponse.json(
+        { error: 'Queue is full. Please wait for other players to finish.' },
+        { status: 400 }
+      );
+    }
+
     // Add to queue
     const { data: queueEntry, error: queueError } = await supabase
       .from('game_queue')
