@@ -827,15 +827,6 @@ If you make changes to the project, you **MUST** update the relevant documentati
 - [ ] Game flows documented in GAME_FLOW.md
 - [ ] API changes reflected in README and PRD
 
-### UI Reminder
-
-**⚠️ TODO: Remove Bottom Spin Button**
-
-Before finalizing the UI, remember to:
-- Remove the manual "Spin" button from the homepage bottom
-- The game should primarily be triggered via API calls
-- Keep the admin testing functionality if needed, but remove from production UI
-
 ## 📄 License
 
 This project is proprietary. Do not distribute without permission.

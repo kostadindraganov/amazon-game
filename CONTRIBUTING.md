@@ -30,6 +30,26 @@ For **ANY** change, review these files and update if affected:
 | **IMPLEMENTATION_CHECKLIST.md** | Changes to setup steps, deployment process, dependencies |
 | **README.md** | Changes to setup, API endpoints, deployment, troubleshooting |
 
+### 3. Automated Documentation Enforcement
+
+A **pre-commit hook** is installed in `.git/hooks/pre-commit` that automatically checks for documentation updates:
+
+- **Detects code changes** - API routes, database schemas, components, game logic, etc.
+- **Checks for documentation updates** - Ensures relevant docs are staged for commit
+- **Blocks commits** if required documentation is missing
+- **Provides clear feedback** on what needs to be updated
+
+**To bypass the hook (not recommended):**
+```bash
+git commit --no-verify
+```
+
+**The hook will:**
+✅ Allow commits with only documentation changes
+✅ Allow commits when all required docs are updated
+❌ Block commits when code changes lack documentation
+⚠️  Warn about recommended documentation updates
+
 ---
 
 ## ✅ Pre-PR Checklist
