@@ -44,8 +44,8 @@ export default function Leaderboard() {
   const currentWinner = winners[currentIndex];
 
   return (
-    <div className="w-full  mx-auto mt-2 px-2">
-      <div className="max-h-[170px] overflow-hidden border-2 border-solid border-white-500/70 rounded-lg">
+    <div className="w-full  mx-auto mt-2 px-4">
+      <div className="max-h-[170px] overflow-hidden border-2 border-solid border-yellow-300 rounded-lg">
         {/* Winner Display with Flip Animation */}
         <div className="flip-container">
           <div
@@ -53,9 +53,9 @@ export default function Leaderboard() {
             className="flip-card animate-flip-vertical"
           >
             {/* Winner Info - Equal Width Columns */}
-            <div className="grid grid-cols-5 gap-2 md:gap-4 items-center bg-black/30 backdrop-blur-sm rounded-lg p-3 md:p-4 border border-white/10">
+            <div className="grid grid-cols-[0.5fr_2fr_1.5fr_1fr] md:grid-cols-[0.5fr_2fr_1fr_1fr_0.5fr] gap-2 items-center bg-black/30 backdrop-blur-sm rounded-lg p-1 border border-white/10">
               {/* Column 1: Product Image */}
-              <div className="flex justify-between">
+              <div className="flex">
                 <div className="w-24 h-24  relative bg-white/5 rounded-lg overflow-hidden border border-white/20">
                   {currentWinner.product_image_url ? (
                     <Image
@@ -75,34 +75,33 @@ export default function Leaderboard() {
 
               {/* Column 2: Product Title */}
               <div className="text-center px-2">
-                <p className="text-3xl  text-white/90 font-bold text-left">
+                <p className="text-lg md:text-3xl text-white/90 font-bold text-left truncate">
                   {currentWinner.product_title}
                 </p>
               </div>
 
               {/* Column 3: Winner Username */}
-              <div className="text-center px-2">
-                <p className="text-lg text-white/70 mb-1">ПОБЕДИТЕЛ:</p>
-                <p className="text-2xl font-bold text-white truncate">
+              <div className="text-center px-2 w-full overflow-hidden">
+                <p className="text-xs md:text-lg text-yellow-300 mb-1">ПОБЕДИТЕЛ:</p>
+                <p className="text-lg md:text-2xl font-bold text-white truncate">
                   {currentWinner.username}
-                </p>
+                </p> 
               </div>
 
               {/* Column 4: Price */}
               <div className="text-center px-2">
-                <p className="text-3xl font-bold text-white whitespace-nowrap">
+                <p className="text-lg md:text-3xl font-bold text-white whitespace-nowrap">
                   {currentWinner.product_price} лв
                 </p>
               </div>
 
               {/* Column 5: Date */}
-              <div className="text-center px-2">
+              <div className="hidden md:flex text-center px-2">
                 <p className="text-2xl font-bold text-white/70">
                   {new Date(currentWinner.won_at).toLocaleString('bg-BG', {
                     month: 'short',
                     day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
+
                   })}
                 </p>
               </div>
