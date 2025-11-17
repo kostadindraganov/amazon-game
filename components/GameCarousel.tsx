@@ -342,7 +342,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
   }
 
   return (
-    <div className="relative mb-16">
+    <div className="relative mb-4">
       {/* Roulette Wrapper - CodePen Style */}
       <div
         className="relative overflow-hidden"

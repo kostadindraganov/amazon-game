@@ -12,7 +12,7 @@ export default function Leaderboard() {
     fetchWinners();
 
     // Refresh every 5 seconds
-    const interval = setInterval(fetchWinners, 5000);
+    const interval = setInterval(fetchWinners, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -44,8 +44,8 @@ export default function Leaderboard() {
   const currentWinner = winners[currentIndex];
 
   return (
-    <div className="w-full max-w-6xl mx-auto mt-8 px-4">
-      <div className="max-h-[150px] overflow-hidden">
+    <div className="w-full  mx-auto mt-2 px-2">
+      <div className="max-h-[170px] overflow-hidden border-2 border-solid border-white-500/70 rounded-lg">
         {/* Winner Display with Flip Animation */}
         <div className="flip-container">
           <div
@@ -55,8 +55,8 @@ export default function Leaderboard() {
             {/* Winner Info - Equal Width Columns */}
             <div className="grid grid-cols-5 gap-2 md:gap-4 items-center bg-black/30 backdrop-blur-sm rounded-lg p-3 md:p-4 border border-white/10">
               {/* Column 1: Product Image */}
-              <div className="flex justify-center">
-                <div className="w-16 h-16 md:w-20 md:h-20 relative bg-white/5 rounded-lg overflow-hidden border border-white/20">
+              <div className="flex justify-between">
+                <div className="w-24 h-24  relative bg-white/5 rounded-lg overflow-hidden border border-white/20">
                   {currentWinner.product_image_url ? (
                     <Image
                       src={currentWinner.product_image_url}
@@ -75,29 +75,29 @@ export default function Leaderboard() {
 
               {/* Column 2: Product Title */}
               <div className="text-center px-2">
-                <p className="text-xs md:text-base text-white/90 font-medium truncate">
+                <p className="text-3xl  text-white/90 font-bold text-left">
                   {currentWinner.product_title}
                 </p>
               </div>
 
               {/* Column 3: Winner Username */}
               <div className="text-center px-2">
-                <p className="text-xs md:text-sm text-white/70 mb-1">ПОБЕДИТЕЛ:</p>
-                <p className="text-sm md:text-lg font-bold text-white truncate">
+                <p className="text-lg text-white/70 mb-1">ПОБЕДИТЕЛ:</p>
+                <p className="text-2xl font-bold text-white truncate">
                   {currentWinner.username}
                 </p>
               </div>
 
               {/* Column 4: Price */}
               <div className="text-center px-2">
-                <p className="text-base md:text-xl font-bold text-white whitespace-nowrap">
+                <p className="text-3xl font-bold text-white whitespace-nowrap">
                   {currentWinner.product_price} лв
                 </p>
               </div>
 
               {/* Column 5: Date */}
               <div className="text-center px-2">
-                <p className="text-xs md:text-sm text-white/70">
+                <p className="text-2xl font-bold text-white/70">
                   {new Date(currentWinner.won_at).toLocaleString('bg-BG', {
                     month: 'short',
                     day: 'numeric',
