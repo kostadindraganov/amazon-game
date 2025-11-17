@@ -23,6 +23,7 @@ export interface Product {
   title: string;
   price: number;
   image_url: string;
+  win_at_spin_count?: number;
   status: 'active' | 'won';
   created_at: string;
   won_at?: string;
