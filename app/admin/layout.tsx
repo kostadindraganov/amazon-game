@@ -76,6 +76,12 @@ export default function AdminLayout({
                 Queues
               </Link>
               <Link
+                href="/admin/tiktok"
+                className="px-3 lg:px-4 py-2 rounded-lg bg-pink-600 hover:bg-pink-700 transition-colors text-sm lg:text-base"
+              >
+                TikTok Live
+              </Link>
+              <Link
                 href="/"
                 className="px-3 lg:px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 transition-colors text-sm lg:text-base"
               >
@@ -114,6 +120,13 @@ export default function AdminLayout({
                 onClick={() => setMenuOpen(false)}
               >
                 Queues
+              </Link>
+              <Link
+                href="/admin/tiktok"
+                className="block px-4 py-2 rounded-lg bg-pink-600 hover:bg-pink-700 transition-colors"
+                onClick={() => setMenuOpen(false)}
+              >
+                TikTok Live
               </Link>
               <Link
                 href="/"

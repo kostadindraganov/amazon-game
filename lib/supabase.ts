@@ -66,3 +66,30 @@ export interface GameQueue {
 export interface SliderItem extends Product {
   type?: 'product' | 'filler';
 }
+
+export interface TikTokSettings {
+  id: number;
+  username: string | null;
+  is_connected: boolean;
+  connection_status: 'disconnected' | 'connecting' | 'connected' | 'error';
+  error_message: string | null;
+  room_id: string | null;
+  last_connected_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TikTokGiftLog {
+  id: string;
+  username: string;
+  unique_id: string;
+  gift_id: number;
+  gift_name: string | null;
+  gift_points: number;
+  gift_diamond_count: number;
+  repeat_count: number;
+  total_points: number;
+  profile_picture_url: string | null;
+  raw_data: any;
+  received_at: string;
+}
