@@ -63,6 +63,24 @@ export async function POST(request: NextRequest) {
 
     if (queueError) throw queueError;
 
+    // Cleanup old 'done' entries - keep only the 5 most recent
+    const { data: doneEntries, error: doneError } = await supabase
+      .from('game_queue')
+      .select('id')
+      .eq('status', 'done')
+      .order('created_at', { ascending: false });
+
+    if (!doneError && doneEntries && doneEntries.length > 5) {
+      // Get IDs of entries to delete (all except the first 5)
+      const idsToDelete = doneEntries.slice(5).map(entry => entry.id);
+
+      // Delete old entries
+      await supabase
+        .from('game_queue')
+        .delete()
+        .in('id', idsToDelete);
+    }
+
     return NextResponse.json({
       success: true,
       queued: true,
