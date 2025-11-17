@@ -820,12 +820,29 @@ If you make changes to the project, you **MUST** update the relevant documentati
 5. **Update IMPLEMENTATION_CHECKLIST.md** - If you change implementation steps
 6. **Update README.md** - If you change setup, deployment, or API endpoints
 
+### 🤖 Automated Documentation Support
+
+**Using Claude Code:**
+- **Automatic reminders** - Claude Code automatically reminds you to update docs (see `.claude/rules.md`)
+- **Slash command** - Use `/update-docs` for guided documentation updates
+- **Pre-commit hook** - Blocks commits that lack documentation
+
+**Workflow:**
+```bash
+# 1. Make your code changes
+# 2. Ask Claude: "Update the documentation for my changes"
+#    Or use: /update-docs
+# 3. Review and commit - pre-commit hook will verify
+```
+
 **Documentation Review Checklist Before PR:**
 - [ ] All affected documentation files updated
 - [ ] PRD.md reflects current features
 - [ ] Code structure matches PROJECT_STRUCTURE.md
 - [ ] Game flows documented in GAME_FLOW.md
 - [ ] API changes reflected in README and PRD
+
+**Learn more:** See `.claude/README.md` for details on automated documentation support
 
 ## 📄 License
 

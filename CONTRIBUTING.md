@@ -30,25 +30,43 @@ For **ANY** change, review these files and update if affected:
 | **IMPLEMENTATION_CHECKLIST.md** | Changes to setup steps, deployment process, dependencies |
 | **README.md** | Changes to setup, API endpoints, deployment, troubleshooting |
 
-### 3. Automated Documentation Enforcement
+### 3. Automated Documentation Support
 
-A **pre-commit hook** is installed in `.git/hooks/pre-commit` that automatically checks for documentation updates:
+This project has **three layers of automated documentation support**:
 
-- **Detects code changes** - API routes, database schemas, components, game logic, etc.
-- **Checks for documentation updates** - Ensures relevant docs are staged for commit
-- **Blocks commits** if required documentation is missing
-- **Provides clear feedback** on what needs to be updated
+#### Layer 1: Claude Code Rules (`.claude/rules.md`)
+- **Automatic reminders** when making code changes
+- Acts as "memory" for documentation requirements
+- Loaded automatically by Claude Code
 
-**To bypass the hook (not recommended):**
+#### Layer 2: Slash Command (`.claude/commands/update-docs.md`)
+- **Guided documentation updates** via `/update-docs`
+- Analyzes your changes and identifies required docs
+- Walks you through updating each file
+
+**Usage:**
 ```bash
-git commit --no-verify
+# In Claude Code:
+/update-docs
 ```
+
+#### Layer 3: Pre-Commit Hook (`.git/hooks/pre-commit`)
+- **Blocks commits** if code changes lack documentation
+- Shows exactly which docs need updating
+- Provides clear guidance on next steps
 
 **The hook will:**
 ✅ Allow commits with only documentation changes
 ✅ Allow commits when all required docs are updated
 ❌ Block commits when code changes lack documentation
 ⚠️  Warn about recommended documentation updates
+
+**To bypass (not recommended):**
+```bash
+git commit --no-verify
+```
+
+**Learn more:** See `.claude/README.md` for complete documentation on automated support
 
 ---
 

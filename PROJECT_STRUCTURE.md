@@ -88,6 +88,16 @@ amazon-game/
 │   │   └── 001_initial_schema.sql      # Database schema
 │   └── seed.sql                        # Demo data for testing
 │
+├── .claude/                            # Claude Code configuration
+│   ├── README.md                       # Documentation automation guide
+│   ├── rules.md                        # Project-specific rules (auto-loaded)
+│   └── commands/
+│       └── update-docs.md              # /update-docs slash command
+│
+├── .git/
+│   └── hooks/
+│       └── pre-commit                  # Documentation enforcement hook
+│
 ├── docs/
 │   ├── PRD.md                          # Product Requirements Document
 │   ├── PROJECT_STRUCTURE.md            # This file
@@ -102,6 +112,7 @@ amazon-game/
 ├── tsconfig.json
 ├── tailwind.config.ts
 ├── next.config.ts
+├── CONTRIBUTING.md                     # Contribution guidelines
 └── README.md
 ```
 
@@ -133,6 +144,21 @@ Static assets (images, icons, etc.)
 
 ### `/supabase`
 Database migrations and seed data for Supabase.
+
+### `/.claude`
+Claude Code configuration for automated documentation support:
+- **rules.md** - Auto-loaded project rules (documentation requirements)
+- **commands/update-docs.md** - Custom slash command for updating docs
+- **README.md** - Documentation automation guide
+
+This directory enables:
+1. Automatic reminders to update documentation
+2. `/update-docs` slash command for guided updates
+3. Integration with pre-commit hook
+
+### `/.git/hooks`
+Git hooks for repository quality control:
+- **pre-commit** - Enforces documentation updates before commits
 
 ### `/docs`
 All project documentation.
