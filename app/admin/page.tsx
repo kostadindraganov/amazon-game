@@ -16,8 +16,12 @@ export default function AdminProducts() {
   const [uploading, setUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState('');
 
+  // Spin state
+  const [spinState, setSpinState] = useState<{ current_spin_count: number } | null>(null);
+
   useEffect(() => {
     fetchProducts();
+    fetchSpinState();
   }, [page]);
 
   const fetchProducts = async () => {
@@ -32,6 +36,16 @@ export default function AdminProducts() {
       alert('Failed to fetch products');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSpinState = async () => {
+    try {
+      const res = await fetch('/api/game/current');
+      const data = await res.json();
+      setSpinState(data.spinState);
+    } catch (error) {
+      console.error('Error fetching spin state:', error);
     }
   };
 
@@ -127,6 +141,25 @@ export default function AdminProducts() {
   return (
     <div>
       <h1 className="text-4xl font-bold mb-8 text-casino-gold">Product Management</h1>
+
+      {/* Spin State Count */}
+      <div className="bg-gradient-to-r from-purple-900 to-pink-900 p-6 rounded-xl mb-6 border border-purple-500">
+        <h2 className="text-xl font-bold mb-2 text-white">Current Spin State</h2>
+        <div className="flex items-center gap-4">
+          <div className="text-4xl font-bold text-casino-gold">
+            {spinState ? spinState.current_spin_count : '...'}
+          </div>
+          <div className="text-gray-300">
+            <div className="text-sm">Total Spins</div>
+            <button
+              onClick={fetchSpinState}
+              className="text-xs text-purple-300 hover:text-purple-200 underline"
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Upload Form */}
       <div className="bg-gray-800 p-6 rounded-xl mb-8 border border-gray-700">
