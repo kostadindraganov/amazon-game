@@ -17,6 +17,15 @@ export default function AdminProducts() {
   const [uploading, setUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState('');
 
+  // Edit modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+  const [editWinAtSpinCount, setEditWinAtSpinCount] = useState('');
+  const [editImageUrl, setEditImageUrl] = useState('');
+  const [editUploading, setEditUploading] = useState(false);
+
   // Spin state
   const [spinState, setSpinState] = useState<{ current_spin_count: number } | null>(null);
 
@@ -159,6 +168,101 @@ export default function AdminProducts() {
       console.error('Error updating status:', error);
       alert('Failed to update product status');
     }
+  };
+
+  const handleEditClick = (product: Product) => {
+    setEditingProduct(product);
+    setEditTitle(product.title);
+    setEditPrice(product.price.toString());
+    setEditWinAtSpinCount(product.win_at_spin_count?.toString() || '');
+    setEditImageUrl(product.image_url);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setEditUploading(true);
+    try {
+      // Get upload URL
+      const urlRes = await fetch('/api/admin/upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileType: file.type
+        })
+      });
+
+      const { uploadUrl, fileUrl } = await urlRes.json();
+
+      // Upload to R2
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type
+        }
+      });
+
+      if (!uploadRes.ok) throw new Error('Upload failed');
+
+      setEditImageUrl(fileUrl);
+      alert('Image uploaded successfully!');
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Failed to upload image');
+    } finally {
+      setEditUploading(false);
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editingProduct || !editTitle || !editPrice || !editImageUrl) {
+      alert('Please fill all required fields');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/products/${editingProduct.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: editTitle,
+          price: parseFloat(editPrice),
+          image_url: editImageUrl,
+          win_at_spin_count: editWinAtSpinCount ? parseInt(editWinAtSpinCount) : null
+        })
+      });
+
+      if (!res.ok) throw new Error('Failed to update product');
+
+      const updatedProduct = await res.json();
+
+      alert('Product updated successfully!');
+      setIsEditModalOpen(false);
+      setEditingProduct(null);
+
+      // Update local state to reflect the change immediately
+      setProducts(products.map(p =>
+        p.id === updatedProduct.id ? updatedProduct : p
+      ));
+    } catch (error) {
+      console.error('Error updating product:', error);
+      alert('Failed to update product');
+    }
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingProduct(null);
+    setEditTitle('');
+    setEditPrice('');
+    setEditWinAtSpinCount('');
+    setEditImageUrl('');
   };
 
   return (
@@ -339,12 +443,20 @@ export default function AdminProducts() {
                       </select>
                     </td>
                     <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleDelete(product.id)}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-                      >
-                        Delete
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditClick(product)}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(product.id)}
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -376,6 +488,116 @@ export default function AdminProducts() {
           </div>
         )}
       </div>
+
+      {/* Edit Product Modal */}
+      {isEditModalOpen && editingProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-xl border border-gray-700 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-white">Edit Product</h2>
+                <button
+                  onClick={handleCloseEditModal}
+                  className="text-gray-400 hover:text-white text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-300">
+                    Product Title
+                  </label>
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="iPhone 15 Pro"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-300">
+                    Price (лв)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="1600"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-300">
+                    Win at Spin Count
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={editWinAtSpinCount}
+                    onChange={(e) => setEditWinAtSpinCount(e.target.value)}
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="100"
+                  />
+                  <p className="text-sm text-gray-400 mt-1">
+                    This product will be awarded at this specific spin count (optional)
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-300">
+                    Product Image
+                  </label>
+                  <div className="mb-2">
+                    <p className="text-sm text-gray-400">Current Image:</p>
+                    <div className="relative w-32 h-32 mt-2">
+                      <Image
+                        src={editImageUrl}
+                        alt="Current product"
+                        fill
+                        className="object-contain bg-white rounded-lg"
+                        unoptimized
+                      />
+                    </div>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleEditImageUpload}
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-600 file:text-white hover:file:bg-purple-700"
+                    disabled={editUploading}
+                  />
+                  {editUploading && <p className="text-sm text-gray-400 mt-2">Uploading...</p>}
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="submit"
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all"
+                    disabled={editUploading}
+                  >
+                    Update Product
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCloseEditModal}
+                    className="px-6 py-3 bg-gray-700 text-white font-bold rounded-lg hover:bg-gray-600 transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
