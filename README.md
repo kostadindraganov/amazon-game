@@ -33,18 +33,22 @@ For comprehensive project documentation, see:
 ### Admin Panel Features
 - **Product management** - Upload products with images to Cloudflare R2
 - **Settings control** - Configure slider items, win frequency, and point requirements
-- **Winners history** - View all past winners with pagination
+- **Winners history** - View all past winners with pagination and delete functionality
 - **Status tracking** - See which products are active or already won
+- **Queue management** - View and manage the player queue in real-time
+- **TikTok Live integration** - Connect to TikTok Live streams, receive gifts, and auto-queue players based on gift points
 
 ## 📦 Tech Stack
 
 - **Framework:** Next.js 16 (App Router)
 - **Language:** TypeScript
+- **UI Library:** React 19
 - **Styling:** Tailwind CSS
 - **Animations:** GSAP (GreenSock)
 - **Database:** Supabase (PostgreSQL)
 - **Storage:** Cloudflare R2
 - **Image Optimization:** Next.js Image
+- **Live Integration:** TikTok Live Connector
 
 ## 🚀 Getting Started
 
@@ -93,7 +97,10 @@ This will create:
 - `spin_state` table - Tracks spin counter
 - `winners` table - Records all winners
 - `game_queue` table - Manages player queue
+- `tiktok_settings` table - TikTok Live connection settings
+- `tiktok_gift_logs` table - Logs all TikTok gifts received
 - Sample products with demo data
+- Database functions for spin count management
 
 ### 4. Cloudflare R2 Setup
 
@@ -162,12 +169,16 @@ amazon-game/
 │   │   └── admin/           # Admin endpoints
 │   │       ├── products/    # CRUD products
 │   │       ├── settings/    # Update settings
-│   │       ├── winners/     # View winners
+│   │       ├── winners/     # View/delete winners
+│   │       ├── queue/       # Manage queue
+│   │       ├── tiktok/      # TikTok Live integration
 │   │       └── upload-url/  # Generate R2 upload URL
 │   ├── admin/               # Admin panel pages
 │   │   ├── page.tsx        # Products management
 │   │   ├── settings/       # Settings page
-│   │   └── winners/        # Winners history
+│   │   ├── winners/        # Winners history
+│   │   ├── queues/         # Queue management
+│   │   └── tiktok/         # TikTok Live settings
 │   ├── globals.css         # Global styles
 │   ├── layout.tsx          # Root layout
 │   └── page.tsx            # Game homepage
@@ -218,6 +229,16 @@ curl -X POST http://localhost:3000/api/game/play \
 
 If `points = 600` and `min_points_for_play = 300`, the user gets **2 spins**.
 
+#### Option 3: TikTok Live Integration (Automatic)
+
+1. Go to admin panel → **TikTok Live** tab
+2. Enter your TikTok username and click "Connect"
+3. When viewers send gifts during your live stream:
+   - Gifts are automatically detected
+   - Points calculated from gift diamond count
+   - Players auto-queued based on points
+   - Spins happen automatically in sequence
+
 ### Admin Panel
 
 Access the admin panel at [http://localhost:3000/admin](http://localhost:3000/admin)
@@ -252,6 +273,38 @@ Go to **Winners** tab to see all past winners with:
 - Product won
 - Prize value
 - Timestamp
+- Delete functionality for individual entries
+
+#### Managing Queue
+
+Go to **Queues** tab to:
+- View all pending, processing, and completed queue entries
+- See real-time queue status
+- Remove specific entries from the queue
+- Monitor player turns in real-time
+
+#### TikTok Live Integration
+
+Go to **TikTok Live** tab to:
+1. **Connect to TikTok Live:**
+   - Enter TikTok username
+   - Click "Connect to Live Stream"
+   - System connects to live stream and listens for gifts
+
+2. **Auto-Queue from Gifts:**
+   - When viewers send gifts, they're automatically added to the game queue
+   - Points calculated based on gift diamond count
+   - All gifts logged in database with viewer information
+
+3. **View Gift Logs:**
+   - See all received gifts with pagination
+   - Track username, gift name, points, and timestamp
+   - Monitor which viewers sent gifts
+
+4. **Connection Status:**
+   - Real-time connection status (connected/disconnected/error)
+   - Error messages if connection fails
+   - Reconnection functionality
 
 ## 🎯 Game Logic Explained
 
@@ -299,6 +352,99 @@ User C sends 300 points → Queued
 → After spin completes → User B plays
 → After spin completes → User C plays
 ```
+
+**Scenario 5:** TikTok Live Integration
+```
+TikTok viewer sends Rose gift (1 diamond = 1 point)
+→ Not enough for a spin (min 300 points)
+
+TikTok viewer sends Galaxy gift (1000 diamonds = 1000 points)
+→ 3 spins queued (1000 / 300 = 3 plays)
+→ Automatically added to game queue
+→ Logged in tiktok_gift_logs table
+→ Spins happen automatically in sequence
+```
+
+## 🎥 TikTok Live Integration
+
+### How It Works
+
+The casino wheel game integrates directly with TikTok Live streams using the `tiktok-live-connector` package. When connected, the system:
+
+1. **Connects to Live Stream:**
+   - Admin enters their TikTok username in the admin panel
+   - System connects to the live stream in real-time
+   - Connection status displayed in admin panel
+
+2. **Listens for Gifts:**
+   - Monitors all gifts sent by viewers during the stream
+   - Captures gift metadata (name, diamond count, sender info)
+   - Stores all gifts in `tiktok_gift_logs` table
+
+3. **Auto-Queues Players:**
+   - Calculates points based on gift diamond count
+   - If points ≥ `min_points_for_play`, adds viewer to queue
+   - Multiple spins awarded based on total points
+   - Example: 1000 diamonds with 300 min points = 3 spins
+
+4. **Processes Spins:**
+   - Queue automatically processes in FIFO order
+   - Each viewer's spins happen sequentially
+   - Winner announcements displayed on stream overlay (if configured)
+
+### Gift Points Calculation
+
+```javascript
+totalPoints = giftDiamondCount * repeatCount
+playsAwarded = Math.floor(totalPoints / minPointsForPlay)
+```
+
+**Example Gifts:**
+- Rose (1 diamond) × 100 = 100 points → 0 spins (if min = 300)
+- Heart (10 diamonds) × 50 = 500 points → 1 spin (if min = 300)
+- Galaxy (1000 diamonds) × 1 = 1000 points → 3 spins (if min = 300)
+
+### TikTok Live Features
+
+- **Real-time connection** - Instant gift detection
+- **Automatic player queue** - No manual input needed
+- **Gift logging** - Full history of all gifts received
+- **Connection monitoring** - Auto-reconnect on errors
+- **Viewer profile data** - Stores username and profile picture
+- **Raw data storage** - Complete gift metadata in JSONB format
+
+### Use Cases
+
+1. **Live Stream Giveaways:**
+   - Run the game during TikTok Live
+   - Viewers send gifts to enter
+   - Automatic winner selection and announcement
+
+2. **Point-Based Raffles:**
+   - Higher-value gifts = more spins
+   - Encourages larger gift donations
+   - Fair distribution based on contribution
+
+3. **Viewer Engagement:**
+   - Interactive live stream experience
+   - Real-time visual feedback on wheel
+   - Community participation
+
+### Important Notes
+
+- **TikTok Account Requirements:**
+  - Account must allow receiving gifts
+  - Must be actively live streaming for connection to work
+  - Some regions may have restrictions
+
+- **Connection Stability:**
+  - TikTok may occasionally block connections
+  - System includes auto-reconnect logic
+  - Connection status visible in admin panel
+
+- **Rate Limiting:**
+  - Gift detection is real-time but may have slight delays
+  - Queue processing happens sequentially to prevent race conditions
 
 ## 🔧 API Reference
 
@@ -427,6 +573,86 @@ Generate R2 upload URL
 }
 ```
 
+#### `GET /api/admin/queue`
+Get all queue entries
+
+#### `DELETE /api/admin/queue/:id`
+Delete queue entry by ID
+
+#### `GET /api/admin/winners?page=1&limit=50`
+Get paginated winners
+
+#### `DELETE /api/admin/winners/:id`
+Delete winner entry
+
+### TikTok Live Endpoints
+
+#### `GET /api/admin/tiktok/settings`
+Get TikTok connection settings
+```json
+// Response
+{
+  "id": 1,
+  "username": "tiktok_username",
+  "is_connected": true,
+  "connection_status": "connected",
+  "room_id": "7123456789",
+  "last_connected_at": "2025-11-17T10:30:00Z"
+}
+```
+
+#### `POST /api/admin/tiktok/connect`
+Connect to TikTok Live stream
+```json
+// Request
+{
+  "username": "tiktok_username"
+}
+
+// Response
+{
+  "success": true,
+  "message": "Connected to TikTok Live"
+}
+```
+
+#### `POST /api/admin/tiktok/disconnect`
+Disconnect from TikTok Live stream
+
+#### `PATCH /api/admin/tiktok/settings`
+Update TikTok settings
+```json
+// Request
+{
+  "username": "new_username"
+}
+```
+
+#### `GET /api/admin/tiktok/logs?page=1&limit=50`
+Get paginated gift logs
+```json
+// Response
+{
+  "logs": [
+    {
+      "id": "uuid",
+      "username": "viewer_name",
+      "gift_name": "Rose",
+      "gift_points": 1,
+      "gift_diamond_count": 1,
+      "total_points": 1,
+      "received_at": "2025-11-17T10:30:00Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 50,
+    "total": 100,
+    "totalPages": 2
+  }
+}
+```
+
 ## 🎨 Customization
 
 ### Changing Colors
@@ -516,16 +742,30 @@ Make sure to add all `.env.local` variables to your hosting platform:
 - Verify queue table has entries
 - Check browser console for polling errors
 
+### TikTok Live connection issues
+- Verify the TikTok username is correct and the user is currently live
+- Check server logs for connection errors
+- Ensure `tiktok-live-connector` package is installed
+- TikTok may block connections - try reconnecting
+- Check that the TikTok account allows viewers to send gifts
+
+### TikTok gifts not adding players to queue
+- Verify game settings are configured (min_points_for_play)
+- Check `tiktok_gift_logs` table to see if gifts are being logged
+- Ensure gift diamond count is sufficient for at least 1 play
+- Check server logs for queue insertion errors
+
 ## 📝 Database Schema Overview
 
 ### `products`
 - Stores all prize products
 - Status: `active` or `won`
 - Won products excluded from future spins
+- Includes title, price, image URL, and optional win_at_spin_count
 
 ### `settings`
 - Single row configuration
-- Controls game behavior
+- Controls game behavior (slider count, win frequency, min points)
 - Can be updated via admin panel
 
 ### `spin_state`
@@ -535,13 +775,27 @@ Make sure to add all `.env.local` variables to your hosting platform:
 
 ### `winners`
 - Historical record of all winners
-- Includes denormalized product data
+- Includes denormalized product data (title, price, image)
 - Sorted by timestamp for leaderboard
+- Can be deleted by admin
 
 ### `game_queue`
 - FIFO queue for players
 - Status: `pending`, `processing`, `done`
+- Tracks number of plays per user
 - Automatically processed by game logic
+
+### `tiktok_settings`
+- Single row configuration for TikTok Live
+- Connection status, username, room ID
+- Last connected timestamp and error messages
+
+### `tiktok_gift_logs`
+- Historical record of all TikTok gifts received
+- Includes username, unique_id, gift details
+- Gift points, diamond count, and repeat count
+- Profile picture URL and raw data (JSONB)
+- Used for analytics and player queue integration
 
 ## 🎓 Learning Resources
 
