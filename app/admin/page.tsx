@@ -138,6 +138,26 @@ export default function AdminProducts() {
     }
   };
 
+  const handleStatusChange = async (id: string, newStatus: 'active' | 'won') => {
+    try {
+      const res = await fetch(`/api/admin/products/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (!res.ok) throw new Error('Failed to update status');
+
+      // Update local state to reflect the change immediately
+      setProducts(products.map(p =>
+        p.id === id ? { ...p, status: newStatus } : p
+      ));
+    } catch (error) {
+      console.error('Error updating status:', error);
+      alert('Failed to update product status');
+    }
+  };
+
   return (
     <div>
       <h1 className="text-4xl font-bold mb-8 text-casino-gold">Product Management</h1>
@@ -277,12 +297,22 @@ export default function AdminProducts() {
                       {product.price} лв
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`
-                        px-3 py-1 rounded-full text-sm font-semibold
-                        ${product.status === 'active' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}
-                      `}>
-                        {product.status === 'active' ? 'Active' : 'Won'}
-                      </span>
+                      <select
+                        value={product.status}
+                        onChange={(e) => handleStatusChange(product.id, e.target.value as 'active' | 'won')}
+                        className={`
+                          px-3 py-2 rounded-lg text-sm font-semibold cursor-pointer
+                          focus:ring-2 focus:ring-purple-500 focus:outline-none
+                          transition-colors
+                          ${product.status === 'active'
+                            ? 'bg-green-600 text-white hover:bg-green-700'
+                            : 'bg-red-600 text-white hover:bg-red-700'
+                          }
+                        `}
+                      >
+                        <option value="active" className="bg-gray-800">Active</option>
+                        <option value="won" className="bg-gray-800">Won</option>
+                      </select>
                     </td>
                     <td className="px-6 py-4">
                       <button
