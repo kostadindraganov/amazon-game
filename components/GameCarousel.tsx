@@ -296,20 +296,6 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
           easing="cubic-bezier(0.65, 0, 0.35, 1)"
         />
       </div>
-
-      {isSpinning && (
-        <div className="text-center mt-6">
-          <div
-            className="inline-block px-6 py-3 rounded-full"
-            style={{
-              background: 'linear-gradient(to right, #F95146, #00C74D)',
-              border: '2px solid rgba(255, 255, 255, 0.3)',
-            }}
-          >
-            <span className="text-xl font-bold text-white animate-pulse">🎰 SPINNING...</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
