@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
-import gsap from 'gsap';
+import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import type { SliderItem } from '@/lib/supabase';
 import { SpinRoulette } from 'react-spin-roulette';
@@ -12,8 +11,6 @@ interface GameCarouselProps {
 }
 
 export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarouselProps) {
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const [sliderItems, setSliderItems] = useState<SliderItem[]>([]);
   const [winningIndex, setWinningIndex] = useState<number>(0);
   const [currentQueueId, setCurrentQueueId] = useState<number | null>(null);
@@ -27,7 +24,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
   }));
 
   // Custom prize renderer for cards
-  const renderPrize = useCallback((prize: any, index: number) => {
+  const renderPrize = useCallback((prize: any) => {
     const item = prize.value as SliderItem;
     const isFiller = item.type === 'filler';
 
@@ -35,8 +32,8 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     let cardColor = '#2D3035'; // dark (default for products)
     if (isFiller) {
       cardColor = '#F95146'; // red for fillers
-    } else if (index % 3 === 0) {
-      cardColor = '#00C74D'; // green for some products
+    } else if (Math.random() > 0.67) {
+      cardColor = '#00C74D'; // green for some products (random distribution)
     }
 
     return (
@@ -110,12 +107,6 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
       console.error('❌ [GameCarousel] Error fetching slider items:', error);
     }
   };
-
-  // Create infinite loop by triplicating items
-  const infiniteItems = sliderItems.length > 0
-    ? [...sliderItems, ...sliderItems, ...sliderItems]
-    : [];
-
 
   const checkForNextPlayer = useCallback(async () => {
     try {
@@ -205,17 +196,14 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
   const spinCarousel = useCallback(async (queueId: number) => {
     console.log('🎰 [GameCarousel.spinCarousel] Starting spin for queueId:', queueId);
 
-    if (!carouselRef.current || sliderItems.length === 0) {
-      console.error('❌ [GameCarousel.spinCarousel] Cannot spin - missing carousel ref or slider items');
-      // Reset state if we can't spin
+    if (sliderItems.length === 0) {
+      console.error('❌ [GameCarousel.spinCarousel] Cannot spin - no slider items');
       setIsSpinning(false);
       setCurrentQueueId(null);
       return;
     }
 
     try {
-      setIsSpinning(true);
-
       console.log('📡 [GameCarousel.spinCarousel] Calling /api/game/spin...');
 
       // Call spin API to determine outcome
@@ -234,150 +222,118 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
         spinCount: spinData.spinCount
       });
 
-    // Calculate target position
-    let targetIndex;
-    if (spinData.isWinner && spinData.product) {
-      console.log('🏆 [GameCarousel.spinCarousel] WINNER! Finding product in slider:', spinData.product.title);
-      // Find the winning product in the middle set
-      const baseIndex = sliderItems.findIndex(item => item.id === spinData.product.id);
-      if (baseIndex === -1) {
-        console.warn('⚠️  [GameCarousel.spinCarousel] Product not found in slider, using random position');
-        targetIndex = sliderItems.length + Math.floor(Math.random() * sliderItems.length);
-      } else {
-        targetIndex = sliderItems.length + baseIndex; // Middle set
-        console.log('✅ [GameCarousel.spinCarousel] Product found at index:', baseIndex, '(targeting middle set)');
-      }
-    } else {
-      console.log('🎯 [GameCarousel.spinCarousel] Not a winner, selecting "Try Again" filler');
-      // Find a "Try Again" filler in middle set
-      const fillerIndices = sliderItems
-        .map((item, idx) => item.type === 'filler' ? idx : -1)
-        .filter(idx => idx !== -1);
-      const randomFillerIndex = fillerIndices[Math.floor(Math.random() * fillerIndices.length)] || 0;
-      targetIndex = sliderItems.length + randomFillerIndex;
-      console.log('✅ [GameCarousel.spinCarousel] Filler selected at index:', randomFillerIndex);
-    }
+      // Calculate target index
+      let targetIndex;
+      if (spinData.isWinner && spinData.product) {
+        console.log('🏆 [GameCarousel.spinCarousel] WINNER! Finding product in slider:', spinData.product.title);
+        targetIndex = sliderItems.findIndex(item => item.id === spinData.product.id);
 
-    const itemWidth = 244; // Width of each item (220px) + gap (24px)
-    const centerOffset = (window.innerWidth / 2) - (itemWidth / 2);
-
-    // Calculate final position
-    const targetPosition = -(targetIndex * itemWidth) + centerOffset;
-
-    console.log('🎯 [GameCarousel.spinCarousel] Animation target calculated:', {
-      targetIndex,
-      targetPosition,
-      itemWidth,
-      centerOffset
-    });
-
-    // Create casino slot machine animation timeline
-    console.log('🎬 [GameCarousel.spinCarousel] Starting GSAP animation...');
-    const timeline = gsap.timeline();
-
-    // Phase 1: Fast acceleration (like pulling slot lever)
-    timeline.to(carouselRef.current, {
-      x: '-=800',
-      duration: 0.3,
-      ease: 'power2.in',
-    });
-
-    // Phase 2: High speed spinning
-    timeline.to(carouselRef.current, {
-      x: targetPosition - 2000,
-      duration: 3,
-      ease: 'none',
-    });
-
-    // Phase 3: Gradual deceleration (slot machine slow down)
-    timeline.to(carouselRef.current, {
-      x: targetPosition - 500,
-      duration: 1.5,
-      ease: 'power1.out',
-    });
-
-    // Phase 4: Final positioning with bounce (mechanical stop)
-    timeline.to(carouselRef.current, {
-      x: targetPosition,
-      duration: 1.2,
-      ease: 'elastic.out(0.8, 0.4)',
-      onComplete: () => {
-        console.log('🏁 [GameCarousel.spinCarousel] Animation complete!');
-
-        setIsSpinning(false);
-        setCurrentQueueId(null); // Reset so next player can be processed
-
-        console.log('🔓 [GameCarousel.spinCarousel] Spinning state reset, queue ID cleared');
-
-        // Show winner modal if applicable
-        if (spinData.isWinner) {
-          console.log('🎉 [GameCarousel.spinCarousel] Showing winner modal');
-          window.dispatchEvent(new CustomEvent('showWinner', {
-            detail: {
-              username: spinData.winner?.username,
-              product: spinData.product
-            }
-          }));
-        }
-
-        // Refresh slider items
-        console.log('🔄 [GameCarousel.spinCarousel] Refreshing slider items...');
-        fetchSliderItems();
-
-        // Check if same player has more plays
-        console.log('🔍 [GameCarousel.spinCarousel] Checking for remaining plays:', spinData.remainingPlays);
-        if (spinData.remainingPlays > 0) {
-          console.log('🔄 [GameCarousel.spinCarousel] Player has more plays! Setting up next spin...', {
-            remainingPlays: spinData.remainingPlays,
-            isWinner: spinData.isWinner,
-            waitTime: spinData.isWinner ? 5000 : 0
-          });
-
-          // Wait for winner modal to close (5s) or immediately if no winner
-          const waitTime = spinData.isWinner ? 5000 : 0;
-          setTimeout(async () => {
-            console.log('⏰ [GameCarousel.spinCarousel] Wait time elapsed, fetching current player...');
-            // Fetch current player data to get username
-            const currentRes = await fetch('/api/game/current');
-            const currentData = await currentRes.json();
-
-            console.log('📊 [GameCarousel.spinCarousel] Current player data:', {
-              hasCurrentPlayer: !!currentData.currentPlayer,
-              playerId: currentData.currentPlayer?.id,
-              username: currentData.currentPlayer?.username,
-              plays: currentData.currentPlayer?.plays
-            });
-
-            if (currentData.currentPlayer) {
-              console.log('🎭 [GameCarousel.spinCarousel] Showing player modal for next play');
-              // Show player modal again
-              window.dispatchEvent(new CustomEvent('showPlayer', {
-                detail: { username: currentData.currentPlayer.username }
-              }));
-
-              // Wait 3 seconds then spin again
-              console.log('⏰ [GameCarousel.spinCarousel] Waiting 3 seconds before next spin...');
-              setTimeout(() => {
-                console.log('🔁 [GameCarousel.spinCarousel] Recursively calling spinCarousel for queueId:', queueId);
-                spinCarousel(queueId);
-              }, 3000);
-            } else {
-              console.warn('⚠️  [GameCarousel.spinCarousel] No current player found for next spin!');
-            }
-          }, waitTime);
+        if (targetIndex === -1) {
+          console.warn('⚠️  [GameCarousel.spinCarousel] Product not found in slider, using random filler');
+          const fillerIndices = sliderItems
+            .map((item, idx) => item.type === 'filler' ? idx : -1)
+            .filter(idx => idx !== -1);
+          targetIndex = fillerIndices[Math.floor(Math.random() * fillerIndices.length)] || 0;
         } else {
-          console.log('✅ [GameCarousel.spinCarousel] No more plays for this player, spin complete');
+          console.log('✅ [GameCarousel.spinCarousel] Product found at index:', targetIndex);
         }
+      } else {
+        console.log('🎯 [GameCarousel.spinCarousel] Not a winner, selecting "Try Again" filler');
+        const fillerIndices = sliderItems
+          .map((item, idx) => item.type === 'filler' ? idx : -1)
+          .filter(idx => idx !== -1);
+        targetIndex = fillerIndices[Math.floor(Math.random() * fillerIndices.length)] || 0;
+        console.log('✅ [GameCarousel.spinCarousel] Filler selected at index:', targetIndex);
       }
-    });
+
+      console.log('🎯 [GameCarousel.spinCarousel] Setting winning index:', targetIndex);
+
+      // Store spinData for onComplete callback
+      (window as any).__currentSpinData = spinData;
+      (window as any).__currentQueueId = queueId;
+
+      // Set winning index and trigger spin
+      setWinningIndex(targetIndex);
+      setIsSpinning(true);
+
     } catch (error) {
       console.error('❌ [GameCarousel.spinCarousel] Error during spin:', error);
-      // Reset state on error
-      console.log('🔄 [GameCarousel.spinCarousel] Resetting state due to error');
       setIsSpinning(false);
       setCurrentQueueId(null);
     }
   }, [sliderItems, setIsSpinning]);
+
+  const handleSpinComplete = useCallback(async () => {
+    console.log('🏁 [GameCarousel.handleSpinComplete] Animation complete!');
+
+    const spinData = (window as any).__currentSpinData;
+    const queueId = (window as any).__currentQueueId;
+
+    setIsSpinning(false);
+    setCurrentQueueId(null);
+
+    console.log('🔓 [GameCarousel.handleSpinComplete] Spinning state reset, queue ID cleared');
+
+    // Show winner modal if applicable
+    if (spinData?.isWinner) {
+      console.log('🎉 [GameCarousel.handleSpinComplete] Showing winner modal');
+      window.dispatchEvent(new CustomEvent('showWinner', {
+        detail: {
+          username: spinData.winner?.username,
+          product: spinData.product
+        }
+      }));
+    }
+
+    // Refresh slider items
+    console.log('🔄 [GameCarousel.handleSpinComplete] Refreshing slider items...');
+    fetchSliderItems();
+
+    // Check if same player has more plays
+    console.log('🔍 [GameCarousel.handleSpinComplete] Checking for remaining plays:', spinData?.remainingPlays);
+    if (spinData?.remainingPlays > 0) {
+      console.log('🔄 [GameCarousel.handleSpinComplete] Player has more plays!', {
+        remainingPlays: spinData.remainingPlays,
+        isWinner: spinData.isWinner,
+        waitTime: spinData.isWinner ? 5000 : 0
+      });
+
+      const waitTime = spinData.isWinner ? 5000 : 0;
+      setTimeout(async () => {
+        console.log('⏰ [GameCarousel.handleSpinComplete] Wait time elapsed, fetching current player...');
+        const currentRes = await fetch('/api/game/current');
+        const currentData = await currentRes.json();
+
+        console.log('📊 [GameCarousel.handleSpinComplete] Current player data:', {
+          hasCurrentPlayer: !!currentData.currentPlayer,
+          playerId: currentData.currentPlayer?.id,
+          username: currentData.currentPlayer?.username,
+          plays: currentData.currentPlayer?.plays
+        });
+
+        if (currentData.currentPlayer) {
+          console.log('🎭 [GameCarousel.handleSpinComplete] Showing player modal for next play');
+          window.dispatchEvent(new CustomEvent('showPlayer', {
+            detail: { username: currentData.currentPlayer.username }
+          }));
+
+          console.log('⏰ [GameCarousel.handleSpinComplete] Waiting 3 seconds before next spin...');
+          setTimeout(() => {
+            console.log('🔁 [GameCarousel.handleSpinComplete] Recursively calling spinCarousel for queueId:', queueId);
+            spinCarousel(queueId);
+          }, 3000);
+        } else {
+          console.warn('⚠️  [GameCarousel.handleSpinComplete] No current player found for next spin!');
+        }
+      }, waitTime);
+    } else {
+      console.log('✅ [GameCarousel.handleSpinComplete] No more plays for this player, spin complete');
+    }
+
+    // Cleanup
+    delete (window as any).__currentSpinData;
+    delete (window as any).__currentQueueId;
+  }, [spinCarousel, setIsSpinning]);
 
   if (sliderItems.length === 0) {
     return (
@@ -389,7 +345,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
 
   return (
     <div className="relative mb-4">
-      {/* Roulette Wrapper - CodePen Style */}
+      {/* Roulette Wrapper */}
       <div
         className="relative overflow-hidden"
         style={{
@@ -398,17 +354,6 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
           borderRadius: '12px',
         }}
       >
-        {/* Center Selector Line */}
-        <div
-          className="absolute top-0 bottom-0 z-20"
-          style={{
-            left: '50%',
-            width: '3px',
-            backgroundColor: '#666',
-            transform: 'translateX(-1.5px)',
-          }}
-        />
-
         {/* Gradient Overlays */}
         <div
           className="absolute left-0 top-0 bottom-0 z-10 pointer-events-none"
@@ -425,72 +370,20 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
           }}
         />
 
-        {/* Wheel Container */}
-        <div
-          ref={containerRef}
-          className="absolute inset-0 flex items-center"
-        >
-          <div
-            ref={carouselRef}
-            className="flex gap-6 absolute"
-            style={{
-              left: '50%',
-              height: '100%',
-              alignItems: 'center',
-            }}
-          >
-            {infiniteItems.map((item, index) => {
-              const isFiller = item.type === 'filler';
-
-              // Assign colors based on type - roulette style
-              let cardColor = '#2D3035'; // black (default for products)
-              if (isFiller) {
-                cardColor = '#F95146'; // red for fillers
-              } else if (index % 3 === 0) {
-                cardColor = '#00C74D'; // green for some products
-              }
-
-              return (
-                <div
-                  key={`${item.id}-${index}`}
-                  className="flex-shrink-0 rounded-lg overflow-hidden flex flex-col items-center justify-center"
-                  style={{
-                    width: '220px',
-                    height: '320px',
-                    backgroundColor: cardColor,
-                    border: '2px solid rgba(255, 255, 255, 0.1)',
-                  }}
-                >
-                  {isFiller ? (
-                    <div className="text-center px-4">
-                      <div className="text-white font-bold text-2xl leading-tight">
-                        {item.title}
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="relative w-32 h-32 mb-4">
-                        <Image
-                          src={item.image_url}
-                          alt={item.title}
-                          fill
-                          className="object-contain"
-                          unoptimized
-                        />
-                      </div>
-                      <div className="text-white text-base font-semibold text-center px-3 leading-tight">
-                        {item.title}
-                      </div>
-                      <div className="text-yellow-400 text-xl font-bold mt-2">
-                        {item.price} лв
-                      </div>
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        {/* React Spin Roulette Component */}
+        <SpinRoulette
+          prizes={prizes}
+          winningIndex={winningIndex}
+          isSpinning={isSpinning}
+          onComplete={handleSpinComplete}
+          duration={5000}
+          orientation="horizontal"
+          prizeSize={264}
+          minSpins={5}
+          className="w-full h-full"
+          renderPrize={renderPrize}
+          renderIndicator={renderIndicator}
+        />
       </div>
 
       {/* Status indicator */}
