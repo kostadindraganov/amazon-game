@@ -14,6 +14,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
   const [sliderItems, setSliderItems] = useState<SliderItem[]>([]);
   const [winningIndex, setWinningIndex] = useState<number>(0);
   const [currentQueueId, setCurrentQueueId] = useState<number | null>(null);
+  const [pendingSpinQueueId, setPendingSpinQueueId] = useState<number | null>(null);
 
   // Transform SliderItem[] to Prize[] for react-spin-roulette
   const prizes = sliderItems.map((item, index) => ({
@@ -159,17 +160,13 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
 
         console.log('🎭 [GameCarousel] Showing player modal for:', data.currentPlayer.username);
 
+        // Store pending spin queue ID - spin will trigger when modal closes
+        setPendingSpinQueueId(data.currentPlayer.id);
+
         // Show player modal
         window.dispatchEvent(new CustomEvent('showPlayer', {
           detail: { username: data.currentPlayer.username }
         }));
-
-        console.log('⏰ [GameCarousel] Waiting 3 seconds before spin...');
-
-        setTimeout(() => {
-          console.log('🎰 [GameCarousel] Triggering spin for queueId:', data.currentPlayer.id);
-          spinCarousel(data.currentPlayer.id);
-        }, 3000);
       } else if (!data.currentPlayer) {
         console.log('💤 [GameCarousel] No player in queue to process');
       }
@@ -315,15 +312,13 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
 
         if (currentData.currentPlayer) {
           console.log('🎭 [GameCarousel.handleSpinComplete] Showing player modal for next play');
+
+          // Store pending spin queue ID - spin will trigger when modal closes
+          setPendingSpinQueueId(queueId);
+
           window.dispatchEvent(new CustomEvent('showPlayer', {
             detail: { username: currentData.currentPlayer.username }
           }));
-
-          console.log('⏰ [GameCarousel.handleSpinComplete] Waiting 3 seconds before next spin...');
-          setTimeout(() => {
-            console.log('🔁 [GameCarousel.handleSpinComplete] Recursively calling spinCarousel for queueId:', queueId);
-            spinCarousel(queueId);
-          }, 3000);
         } else {
           console.warn('⚠️  [GameCarousel.handleSpinComplete] No current player found for next spin!');
         }
@@ -336,6 +331,23 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     delete (window as any).__currentSpinData;
     delete (window as any).__currentQueueId;
   }, [spinCarousel, setIsSpinning, fetchSliderItems]);
+
+  // Listen for player modal close event to trigger spin
+  useEffect(() => {
+    const handlePlayerModalClosed = () => {
+      if (pendingSpinQueueId !== null) {
+        console.log('🎰 [GameCarousel] Player modal closed, triggering spin for queueId:', pendingSpinQueueId);
+        spinCarousel(pendingSpinQueueId);
+        setPendingSpinQueueId(null);
+      }
+    };
+
+    window.addEventListener('playerModalClosed', handlePlayerModalClosed);
+
+    return () => {
+      window.removeEventListener('playerModalClosed', handlePlayerModalClosed);
+    };
+  }, [pendingSpinQueueId, spinCarousel]);
 
   if (sliderItems.length === 0) {
     return (

@@ -13,6 +13,8 @@ export default function PlayerModal() {
 
       setTimeout(() => {
         setShow(false);
+        // Dispatch close event to trigger spin
+        window.dispatchEvent(new CustomEvent('playerModalClosed'));
       }, 3000);
     }) as EventListener;
 
