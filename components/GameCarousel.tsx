@@ -26,6 +26,72 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     value: item, // Store full item for rendering
   }));
 
+  // Custom prize renderer for cards
+  const renderPrize = useCallback((prize: any, index: number) => {
+    const item = prize.value as SliderItem;
+    const isFiller = item.type === 'filler';
+
+    // Determine card color
+    let cardColor = '#2D3035'; // dark (default for products)
+    if (isFiller) {
+      cardColor = '#F95146'; // red for fillers
+    } else if (index % 3 === 0) {
+      cardColor = '#00C74D'; // green for some products
+    }
+
+    return (
+      <div
+        className="flex flex-col items-center justify-between rounded-lg overflow-hidden"
+        style={{
+          width: '240px',
+          height: '340px',
+          backgroundColor: cardColor,
+          border: '2px solid rgba(255, 255, 255, 0.1)',
+          padding: '16px',
+        }}
+      >
+        {isFiller ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-white font-bold text-2xl text-center leading-tight">
+              {item.title}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="text-white text-sm font-semibold text-center leading-tight">
+              {item.title}
+            </div>
+            <div className="relative flex-shrink-0" style={{ width: '180px', height: '180px' }}>
+              <Image
+                src={item.image_url}
+                alt={item.title}
+                fill
+                className="object-contain"
+                unoptimized
+              />
+            </div>
+            <div className="text-yellow-400 text-xl font-bold">
+              {item.price} лв
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }, []);
+
+  // Custom indicator (center selection line)
+  const renderIndicator = useCallback(() => (
+    <div
+      className="absolute top-0 bottom-0 z-20"
+      style={{
+        left: '50%',
+        width: '3px',
+        backgroundColor: '#666',
+        transform: 'translateX(-1.5px)',
+      }}
+    />
+  ), []);
+
   // Fetch slider items
   useEffect(() => {
     fetchSliderItems();
@@ -49,26 +115,6 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
   const infiniteItems = sliderItems.length > 0
     ? [...sliderItems, ...sliderItems, ...sliderItems]
     : [];
-
-  // Simple update for roulette-style carousel (no 3D transforms needed)
-  const updateItemTransforms = useCallback(() => {
-    // No transforms needed for the 2D roulette style
-    // Animation is handled purely by GSAP's x transform
-  }, []);
-
-  // Set initial position to show cards on both sides
-  useEffect(() => {
-    if (carouselRef.current && infiniteItems.length > 0) {
-      // Position the carousel so that the middle set of items is centered
-      // This will show cards on both left and right
-      const itemWidth = 244; // 220px card + 24px gap
-      const middleSetOffset = sliderItems.length * itemWidth;
-      const centerOffset = window.innerWidth / 2 - itemWidth / 2;
-      const initialX = -middleSetOffset + centerOffset;
-
-      gsap.set(carouselRef.current, { x: initialX });
-    }
-  }, [infiniteItems.length, sliderItems.length]);
 
 
   const checkForNextPlayer = useCallback(async () => {
@@ -331,7 +377,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
       setIsSpinning(false);
       setCurrentQueueId(null);
     }
-  }, [sliderItems, setIsSpinning, updateItemTransforms]);
+  }, [sliderItems, setIsSpinning]);
 
   if (sliderItems.length === 0) {
     return (
