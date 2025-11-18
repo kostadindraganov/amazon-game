@@ -286,10 +286,10 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
           winningIndex={winningIndex}
           isSpinning={isSpinning}
           onComplete={handleSpinComplete}
-          duration={5000}
+          duration={8000}
           orientation="horizontal"
           prizeSize={264}
-          minSpins={2}
+          minSpins={1}
           className="w-full h-full"
           renderPrize={renderPrize}
           renderIndicator={renderIndicator}
