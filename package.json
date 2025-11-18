@@ -17,6 +17,7 @@
     "next": "^16.0.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-spin-roulette": "^1.0.7",
     "tiktok-live-connector": "^2.1.0",
     "zod": "^3.22.4"
   },
