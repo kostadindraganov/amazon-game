@@ -21,19 +21,21 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     label: item.title,
     image: item.type === 'product' ? item.image_url : undefined,
     value: item, // Store full item for rendering
+    index, // Store index for deterministic color
   }));
 
   // Custom prize renderer for cards
   const renderPrize = useCallback((prize: any) => {
     const item = prize.value as SliderItem;
     const isFiller = item.type === 'filler';
+    const index = prize.index as number;
 
-    // Determine card color
+    // Determine card color deterministically based on index
     let cardColor = '#2D3035'; // dark (default for products)
     if (isFiller) {
       cardColor = '#F95146'; // red for fillers
-    } else if (Math.random() > 0.67) {
-      cardColor = '#00C74D'; // green for some products (random distribution)
+    } else if (index % 3 === 0) {
+      cardColor = '#00C74D'; // green for some products (deterministic distribution)
     }
 
     return (
@@ -89,12 +91,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     />
   ), []);
 
-  // Fetch slider items
-  useEffect(() => {
-    fetchSliderItems();
-  }, []);
-
-  const fetchSliderItems = async () => {
+  const fetchSliderItems = useCallback(async () => {
     try {
       console.log('📡 [GameCarousel] Fetching slider items...');
       const res = await fetch('/api/game/slider-items');
@@ -106,7 +103,12 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     } catch (error) {
       console.error('❌ [GameCarousel] Error fetching slider items:', error);
     }
-  };
+  }, []);
+
+  // Fetch slider items
+  useEffect(() => {
+    fetchSliderItems();
+  }, [fetchSliderItems]);
 
   const checkForNextPlayer = useCallback(async () => {
     try {
@@ -333,7 +335,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     // Cleanup
     delete (window as any).__currentSpinData;
     delete (window as any).__currentQueueId;
-  }, [spinCarousel, setIsSpinning]);
+  }, [spinCarousel, setIsSpinning, fetchSliderItems]);
 
   if (sliderItems.length === 0) {
     return (
