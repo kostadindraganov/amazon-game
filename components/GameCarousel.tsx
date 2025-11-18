@@ -352,7 +352,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
         className="relative overflow-hidden"
         style={{
           background: '#191B28',
-          height: '400px',
+          height: '100%',
           borderRadius: '12px',
         }}
       >
@@ -378,13 +378,14 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
           winningIndex={winningIndex}
           isSpinning={isSpinning}
           onComplete={handleSpinComplete}
-          duration={5000}
+          duration={8000}
           orientation="horizontal"
           prizeSize={264}
-          minSpins={5}
+          minSpins={2}
           className="w-full h-full"
           renderPrize={renderPrize}
           renderIndicator={renderIndicator}
+          easing="cubic-bezier(0.65, 0, 0.35, 1)"
         />
       </div>
 
