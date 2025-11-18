@@ -155,15 +155,12 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
 
         setCurrentQueueId(data.currentPlayer.id);
 
-        // Set spinning state immediately to prevent duplicate triggers
-        setIsSpinning(true);
-
         console.log('🎭 [GameCarousel] Showing player modal for:', data.currentPlayer.username);
 
         // Store pending spin queue ID - spin will trigger when modal closes
         setPendingSpinQueueId(data.currentPlayer.id);
 
-        // Show player modal
+        // Show player modal (spinning is stopped during modal display)
         window.dispatchEvent(new CustomEvent('showPlayer', {
           detail: { username: data.currentPlayer.username }
         }));
@@ -173,7 +170,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     } catch (error) {
       console.error('❌ [GameCarousel] Error checking queue:', error);
     }
-  }, [isSpinning, currentQueueId, sliderItems.length, setIsSpinning]);
+  }, [isSpinning, currentQueueId, sliderItems.length, setPendingSpinQueueId]);
 
   // Poll for queue updates - ONLY trigger spins from API
   useEffect(() => {
