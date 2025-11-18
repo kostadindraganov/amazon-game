@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import gsap from 'gsap';
 import Image from 'next/image';
 import type { SliderItem } from '@/lib/supabase';
+import { SpinRoulette } from 'react-spin-roulette';
 
 interface GameCarouselProps {
   isSpinning: boolean;
@@ -14,8 +15,16 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
   const carouselRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [sliderItems, setSliderItems] = useState<SliderItem[]>([]);
+  const [winningIndex, setWinningIndex] = useState<number>(0);
   const [currentQueueId, setCurrentQueueId] = useState<number | null>(null);
-  const animationFrameRef = useRef<number | undefined>(undefined);
+
+  // Transform SliderItem[] to Prize[] for react-spin-roulette
+  const prizes = sliderItems.map((item, index) => ({
+    id: item.id,
+    label: item.title,
+    image: item.type === 'product' ? item.image_url : undefined,
+    value: item, // Store full item for rendering
+  }));
 
   // Fetch slider items
   useEffect(() => {
@@ -61,15 +70,6 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     }
   }, [infiniteItems.length, sliderItems.length]);
 
-  // No continuous transform updates needed for 2D roulette style
-  useEffect(() => {
-    // Cleanup function for animation frame if needed
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, []);
 
   const checkForNextPlayer = useCallback(async () => {
     try {
