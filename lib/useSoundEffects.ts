@@ -54,7 +54,7 @@ export function useSoundEffects(): SoundEffects {
 
     const unlockAudio = useCallback(() => {
         if (isAudioUnlocked) {
-            console.log('Audio already unlocked');
+
             return;
         }
 
@@ -71,13 +71,13 @@ export function useSoundEffects(): SoundEffects {
             }
         });
         setIsAudioUnlocked(true);
-        console.log('🔊 Audio unlocked! Sounds are now enabled.');
+
     }, [isAudioUnlocked]);
 
     const playSpinSound = useCallback(() => {
         if (spinSoundRef.current) {
             spinSoundRef.current.currentTime = 0;
-            console.log('Attempting to play spin sound...');
+
             spinSoundRef.current.play().catch(err => {
                 console.error('Failed to play spin sound:', err);
             });
@@ -90,14 +90,14 @@ export function useSoundEffects(): SoundEffects {
         if (spinSoundRef.current) {
             spinSoundRef.current.pause();
             spinSoundRef.current.currentTime = 0;
-            console.log('Spin sound stopped.');
+
         }
     }, []);
 
     const playWinnerSound = useCallback(() => {
         if (winnerSoundRef.current) {
             winnerSoundRef.current.currentTime = 0;
-            console.log('Attempting to play winner sound...');
+
             winnerSoundRef.current.play().catch(err => {
                 console.error('Failed to play winner sound:', err);
             });
@@ -109,7 +109,7 @@ export function useSoundEffects(): SoundEffects {
     const playTryAgainSound = useCallback(() => {
         if (tryAgainSoundRef.current) {
             tryAgainSoundRef.current.currentTime = 0;
-            console.log('Attempting to play try again sound...');
+
             tryAgainSoundRef.current.play().catch(err => {
                 console.error('Failed to play try again sound:', err);
             });

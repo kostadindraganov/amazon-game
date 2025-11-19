@@ -3,7 +3,6 @@ import { supabase, type SliderItem } from '@/lib/supabase';
 
 export async function GET() {
   try {
-    console.log('📡 [API /slider-items] Fetching settings...');
     // Fetch settings
     const { data: settings, error: settingsError } = await supabase
       .from('settings')
@@ -16,10 +15,7 @@ export async function GET() {
       throw settingsError;
     }
 
-    console.log('📊 [API /slider-items] Settings:', settings);
-
     // Fetch active products
-    console.log('📡 [API /slider-items] Fetching active products...');
     const { data: products, error: productsError } = await supabase
       .from('products')
       .select('*')
@@ -30,13 +26,9 @@ export async function GET() {
       throw productsError;
     }
 
-    console.log('📊 [API /slider-items] Products found:', products?.length || 0);
-
     const activeProducts = products || [];
     const totalItems = settings.slider_item_count;
     const fillersNeeded = Math.max(0, totalItems - activeProducts.length);
-
-    console.log('📊 [API /slider-items] Calculation:', { totalItems, activeProducts: activeProducts.length, fillersNeeded });
 
     // Create slider items array
     const sliderItems: SliderItem[] = [
@@ -54,8 +46,6 @@ export async function GET() {
 
     // Shuffle the array for randomness
     const shuffled = sliderItems.sort(() => Math.random() - 0.5);
-
-    console.log('✅ [API /slider-items] Returning items:', shuffled.length);
 
     return NextResponse.json({
       items: shuffled,

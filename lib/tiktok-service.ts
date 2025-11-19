@@ -50,7 +50,7 @@ class TikTokLiveService {
         })
         .eq('id', 1);
 
-      console.log(`✅ Connected to TikTok Live: ${username} (Room ID: ${state.roomId})`);
+
 
       return { success: true, roomId: state.roomId };
     } catch (error: any) {
@@ -94,7 +94,7 @@ class TikTokLiveService {
         })
         .eq('id', 1);
 
-      console.log('✅ Disconnected from TikTok Live');
+
     } catch (error) {
       console.error('❌ Error disconnecting:', error);
       // Re-throw error so API endpoint can return proper error response
@@ -128,7 +128,7 @@ class TikTokLiveService {
         if (error) {
           console.error('❌ Error logging gift:', error);
         } else {
-          console.log(`🎁 Gift received: ${data.uniqueId} sent ${data.giftName} x${data.repeatCount} (${totalPoints} points)`);
+
         }
 
         // Fetch minimum points required to play from settings
@@ -147,7 +147,7 @@ class TikTokLiveService {
 
         // Check if gift points meet or exceed minimum required points
         if (totalPoints >= minPointsForPlay) {
-          console.log(`✅ Gift points (${totalPoints}) meet minimum (${minPointsForPlay}). Triggering game...`);
+
 
           // Trigger game by calling /api/game/play endpoint
           const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
@@ -166,13 +166,13 @@ class TikTokLiveService {
 
           if (response.ok) {
             const result = await response.json();
-            console.log(`🎮 Game triggered for ${username}:`, result);
+
           } else {
             const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
             console.error(`❌ Failed to trigger game:`, errorData);
           }
         } else {
-          console.log(`ℹ️ Gift points (${totalPoints}) below minimum (${minPointsForPlay}). Game not triggered.`);
+
         }
       } catch (error) {
         console.error('❌ Error processing gift event:', error);
@@ -181,11 +181,11 @@ class TikTokLiveService {
 
     // Listen for connection state changes
     this.connection.on('connected', (state) => {
-      console.log('✅ TikTok Live connected:', state);
+
     });
 
     this.connection.on('disconnected', async () => {
-      console.log('❌ TikTok Live disconnected');
+
 
       // Update status in database
       await supabaseAdmin
@@ -213,15 +213,15 @@ class TikTokLiveService {
 
     // Optional: Listen for other events for debugging
     this.connection.on('chat', (data) => {
-      console.log(`💬 ${data.uniqueId}: ${data.comment}`);
+
     });
 
     this.connection.on('member', (data) => {
-      console.log(`👋 ${data.uniqueId} joined`);
+
     });
 
     this.connection.on('like', (data) => {
-      console.log(`❤️ ${data.uniqueId} liked (total: ${data.likeCount})`);
+
     });
   }
 

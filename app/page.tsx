@@ -18,7 +18,7 @@ export default function Home() {
       .catch(console.error);
   }, []);
 
-  console.log(settings);
+
 
   if (!settings) {
     return (

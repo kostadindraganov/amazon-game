@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { queueId } = body;
 
-    console.log('🎰 [POST /api/game/spin] Starting spin for queueId:', queueId);
+
 
     if (!queueId) {
       console.error('❌ [POST /api/game/spin] No queueId provided');
@@ -31,12 +31,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('📋 [POST /api/game/spin] Queue entry loaded:', {
-      id: queueEntry.id,
-      username: queueEntry.username,
-      plays: queueEntry.plays,
-      status: queueEntry.status
-    });
+
 
     // Get settings
     const { data: settings, error: settingsError } = await supabase
@@ -47,10 +42,7 @@ export async function POST(request: NextRequest) {
 
     if (settingsError) throw settingsError;
 
-    console.log('⚙️  [POST /api/game/spin] Settings loaded:', {
-      spin_count_to_win: settings.spin_count_to_win,
-      min_points_for_play: settings.min_points_for_play
-    });
+
 
     // Increment spin count using stored function
     const { data: newCount, error: incrementError } = await supabaseAdmin
@@ -60,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     const currentSpinCount = newCount as number;
 
-    console.log('🔢 [POST /api/game/spin] Spin count incremented to:', currentSpinCount);
+
 
     // ============================================
     // WINNING LOGIC - Priority Order:
@@ -75,7 +67,7 @@ export async function POST(request: NextRequest) {
     let winType = 'none'; // 'product-specific', 'global-frequency', or 'none'
 
     // STEP 1: Check for product-specific wins (HIGHEST PRIORITY)
-    console.log('🎯 [POST /api/game/spin] Checking for product-specific wins...');
+
     const { data: productSpecificWinners, error: specificWinError } = await supabase
       .from('products')
       .select('*')
@@ -97,17 +89,15 @@ export async function POST(request: NextRequest) {
 
       console.log('🎊 [POST /api/game/spin] PRODUCT-SPECIFIC WIN!', {
         spinCount: currentSpinCount,
-        matchingProducts: productSpecificWinners.length,
-        selectedProduct: winningProduct.title,
-        configuredWinAt: winningProduct.win_at_spin_count
+        product: winningProduct.title
       });
     } else {
-      console.log('🎯 [POST /api/game/spin] No product-specific win found. Player gets "Try Again"');
+
     }
 
     // STEP 3: Process winner (if applicable)
     if (isWinner && winningProduct) {
-      console.log(`✨ [POST /api/game/spin] Processing ${winType} winner...`);
+
 
       // Mark product as won
       const { error: updateError } = await supabaseAdmin
@@ -120,7 +110,7 @@ export async function POST(request: NextRequest) {
 
       if (updateError) throw updateError;
 
-      console.log('✅ [POST /api/game/spin] Product marked as won');
+
 
       // Insert winner record
       const { data: winner, error: winnerError } = await supabaseAdmin
@@ -140,32 +130,23 @@ export async function POST(request: NextRequest) {
       winnerData = winner;
 
       console.log('🏅 [POST /api/game/spin] Winner record created:', {
-        id: winner.id,
         username: queueEntry.username,
-        product: winningProduct.title,
-        winType
+        product: winningProduct.title
       });
     }
 
     // Decrement plays or mark as done
     if (queueEntry.plays > 1) {
-      console.log('🔄 [POST /api/game/spin] Player has multiple plays, decrementing...', {
-        currentPlays: queueEntry.plays,
-        newPlays: queueEntry.plays - 1,
-        willKeepStatus: 'processing'
-      });
+
 
       await supabaseAdmin
         .from('game_queue')
         .update({ plays: queueEntry.plays - 1 })
         .eq('id', queueId);
 
-      console.log('✅ [POST /api/game/spin] Plays decremented, status remains PROCESSING');
+
     } else {
-      console.log('✅ [POST /api/game/spin] Last play for this user, marking as DONE', {
-        queueId: queueId,
-        username: queueEntry.username
-      });
+
 
       await supabaseAdmin
         .from('game_queue')
@@ -175,7 +156,7 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', queueId);
 
-      console.log('✅ [POST /api/game/spin] Queue entry marked as DONE');
+
     }
 
     const response = {
@@ -187,12 +168,7 @@ export async function POST(request: NextRequest) {
       remainingPlays: Math.max(0, queueEntry.plays - 1)
     };
 
-    console.log('📤 [POST /api/game/spin] Returning response:', {
-      success: response.success,
-      isWinner: response.isWinner,
-      remainingPlays: response.remainingPlays,
-      username: queueEntry.username
-    });
+
 
     return NextResponse.json(response);
 
