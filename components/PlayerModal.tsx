@@ -15,7 +15,7 @@ export default function PlayerModal() {
         setShow(false);
         // Dispatch close event to trigger spin
         window.dispatchEvent(new CustomEvent('playerModalClosed'));
-      }, 3000);
+      }, 5000);
     }) as EventListener;
 
     window.addEventListener('showPlayer', handleShowPlayer);
@@ -28,12 +28,12 @@ export default function PlayerModal() {
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
-      <div className="bg-gradient-to-br from-purple-900 to-pink-900 p-12 rounded-3xl border-4 border-casino-gold neon-border max-w-2xl">
-        <h2 className="text-5xl font-bold text-center mb-6 neon-text animate-glow">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-gradient-to-br from-purple-900 to-indigo-900 p-12 rounded-2xl border-4 border-white shadow-2xl max-w-2xl">
+        <h2 className="text-4xl font-bold text-center mb-6 text-white">
           В МОМЕНТА ИГРАЕ
         </h2>
-        <p className="text-6xl font-bold text-center text-casino-gold animate-pulse">
+        <p className="text-7xl font-bold text-center text-yellow-400">
           {username}
         </p>
       </div>

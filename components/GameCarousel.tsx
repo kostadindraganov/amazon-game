@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import type { SliderItem } from '@/lib/supabase';
 import { SpinRoulette } from 'react-spin-roulette';
+import { useSoundEffects } from '@/lib/useSoundEffects';
 
 interface GameCarouselProps {
   isSpinning: boolean;
@@ -15,6 +16,10 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
   const [winningIndex, setWinningIndex] = useState<number>(0);
   const [currentQueueId, setCurrentQueueId] = useState<number | null>(null);
   const [pendingSpinQueueId, setPendingSpinQueueId] = useState<number | null>(null);
+  const [isShuffling, setIsShuffling] = useState<boolean>(false);
+
+  // Sound effects
+  const { playSpinSound, playWinnerSound, playTryAgainSound, stopSpinSound, unlockAudio, isAudioUnlocked } = useSoundEffects();
 
   // Use refs instead of window object for better memory management
   const spinDataRef = useRef<any>(null);
@@ -98,6 +103,16 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     />
   ), []);
 
+  // Fisher-Yates shuffle algorithm for true randomization
+  const shuffleArray = useCallback(<T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }, []);
+
   const fetchSliderItems = useCallback(async () => {
     try {
       const res = await fetch('/api/game/slider-items');
@@ -149,13 +164,30 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
   }, [isSpinning, checkForNextPlayer]);
 
   const spinCarousel = useCallback(async (queueId: number) => {
-    if (sliderItems.length === 0) {
+    // Fetch fresh slider items before shuffling
+    // This ensures we have up-to-date data but cards only change during shuffle overlay
+    let freshItems: SliderItem[];
+    try {
+      const res = await fetch('/api/game/slider-items');
+      const data = await res.json();
+      freshItems = data.items || [];
+
+      if (freshItems.length === 0) {
+        setIsSpinning(false);
+        setCurrentQueueId(null);
+        return;
+      }
+
+      // Update state with fresh items (this happens before shuffle overlay)
+      setSliderItems(freshItems);
+    } catch (error) {
       setIsSpinning(false);
       setCurrentQueueId(null);
       return;
     }
 
     try {
+      // Step 1: Call spin API to get winner result
       const spinRes = await fetch('/api/game/spin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -164,34 +196,89 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
 
       const spinData = await spinRes.json();
 
-      let targetIndex;
+      // Step 2: Determine winning item ID
+      let winningItemId: string | null = null;
       if (spinData.isWinner && spinData.product) {
-        targetIndex = sliderItems.findIndex(item => item.id === spinData.product.id);
-
-        if (targetIndex === -1) {
-          const fillerIndices = sliderItems
-            .map((item, idx) => item.type === 'filler' ? idx : -1)
-            .filter(idx => idx !== -1);
-          targetIndex = fillerIndices[Math.floor(Math.random() * fillerIndices.length)] || 0;
-        }
-      } else {
-        const fillerIndices = sliderItems
-          .map((item, idx) => item.type === 'filler' ? idx : -1)
-          .filter(idx => idx !== -1);
-        targetIndex = fillerIndices[Math.floor(Math.random() * fillerIndices.length)] || 0;
+        winningItemId = spinData.product.id;
       }
 
-      // Store in refs instead of window object
-      spinDataRef.current = spinData;
-      queueIdRef.current = queueId;
+      // Step 3: Show shuffling overlay
+      setIsShuffling(true);
 
-      setWinningIndex(targetIndex);
-      setIsSpinning(true);
+      // Timing configuration
+      const preShuffleDelay = 1000; // Show overlay 500ms before shuffle starts
+      const shuffleSteps = 6; // Number of visible shuffle iterations
+      const shuffleInterval = 200; // Time between each shuffle (ms)
+      const postShuffleDelay = 1000; // Keep overlay 500ms after shuffle ends
+
+      // Step 4: Wait before starting shuffle (overlay visible, cards static)
+      setTimeout(() => {
+        // Perform animated shuffle - multiple shuffle steps during overlay
+        // This creates a visual shuffling effect where cards reorder multiple times
+        let shuffleCount = 0;
+        let workingItems = [...freshItems];
+
+        const performShuffleStep = () => {
+          if (shuffleCount < shuffleSteps) {
+            workingItems = shuffleArray(workingItems);
+            setSliderItems([...workingItems]);
+            shuffleCount++;
+            setTimeout(performShuffleStep, shuffleInterval);
+          }
+        };
+
+        // Start the shuffle animation
+        performShuffleStep();
+
+        // Calculate final shuffle and winning index
+        // We need to do this after all shuffles complete
+        setTimeout(() => {
+          // Final shuffle
+          const finalShuffled = shuffleArray(workingItems);
+
+          // Step 5: Recalculate winning index in final shuffled array
+          let targetIndex;
+          if (winningItemId) {
+            targetIndex = finalShuffled.findIndex(item => item.id === winningItemId);
+
+            // Fallback if winner item not found after shuffle
+            if (targetIndex === -1) {
+              const fillerIndices = finalShuffled
+                .map((item, idx) => item.type === 'filler' ? idx : -1)
+                .filter(idx => idx !== -1);
+              targetIndex = fillerIndices[Math.floor(Math.random() * fillerIndices.length)] || 0;
+            }
+          } else {
+            // No winner, select random filler
+            const fillerIndices = finalShuffled
+              .map((item, idx) => item.type === 'filler' ? idx : -1)
+              .filter(idx => idx !== -1);
+            targetIndex = fillerIndices[Math.floor(Math.random() * fillerIndices.length)] || 0;
+          }
+
+          // Store in refs instead of window object
+          spinDataRef.current = spinData;
+          queueIdRef.current = queueId;
+
+          // Apply final shuffled state
+          setSliderItems(finalShuffled);
+
+          // Wait after shuffle completes (overlay still visible, cards static)
+          setTimeout(() => {
+            setIsShuffling(false);
+            setWinningIndex(targetIndex);
+            setIsSpinning(true);
+            // Play spin sound when carousel starts spinning
+            playSpinSound();
+          }, postShuffleDelay); // Hide overlay after post-shuffle delay
+        }, shuffleSteps * shuffleInterval);
+      }, preShuffleDelay); // Start shuffle after pre-shuffle delay
     } catch (error) {
+      setIsShuffling(false);
       setIsSpinning(false);
       setCurrentQueueId(null);
     }
-  }, [sliderItems, setIsSpinning, setCurrentQueueId]);
+  }, [setIsSpinning, setCurrentQueueId, shuffleArray, playSpinSound]);
 
   const handleSpinComplete = useCallback(async () => {
     const spinData = spinDataRef.current;
@@ -200,16 +287,25 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     setIsSpinning(false);
     setCurrentQueueId(null);
 
+    // Stop spin sound
+    stopSpinSound();
+
     if (spinData?.isWinner) {
+      // Play winner sound
+      playWinnerSound();
       window.dispatchEvent(new CustomEvent('showWinner', {
         detail: {
           username: spinData.winner?.username,
           product: spinData.product
         }
       }));
+    } else {
+      // Play try again sound for non-winners
+      playTryAgainSound();
     }
 
-    fetchSliderItems();
+    // Note: fetchSliderItems() moved to start of spinCarousel
+    // This prevents cards from changing after spin completes
 
     if (spinData?.remainingPlays > 0) {
       const waitTime = spinData.isWinner ? 5000 : 0;
@@ -234,7 +330,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     // Cleanup refs
     spinDataRef.current = null;
     queueIdRef.current = null;
-  }, [setIsSpinning, setCurrentQueueId, fetchSliderItems]);
+  }, [setIsSpinning, setCurrentQueueId, fetchSliderItems, stopSpinSound, playWinnerSound, playTryAgainSound]);
 
   useEffect(() => {
     const handlePlayerModalClosed = () => {
@@ -295,6 +391,34 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
           renderIndicator={renderIndicator}
           easing="cubic-bezier(0.65, 0, 0.35, 1)"
         />
+
+        {/* Shuffling overlay */}
+        {isShuffling && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center">
+            {/* Blur backdrop */}
+            <div className="absolute inset-0 backdrop-blur-md bg-black/60" />
+
+            {/* Animated text */}
+            <div className="relative z-40">
+              <h2 className="text-6xl font-bold text-casino-gold animate-pulse">
+                Разбъркване
+              </h2>
+            </div>
+          </div>
+        )}
+
+        {/* Audio unlock button */}
+        {!isAudioUnlocked && (
+          <div className="absolute bottom-4 right-4 z-40">
+            <button
+              onClick={unlockAudio}
+              className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-casino-gold to-yellow-500 text-black font-bold text-sm rounded-full shadow-2xl hover:scale-110 transition-transform duration-200 animate-pulse"
+            >
+              <span className="text-xl">🔊</span>
+              <span>Включи звука</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sound Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: white;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 18px;
+            cursor: pointer;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            background: #333;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔊 Sound Effects Test</h1>
+    <p>Click the buttons below to test each sound effect:</p>
+    
+    <button onclick="testSpinSound()">🎰 Test Spin Sound</button>
+    <button onclick="testWinnerSound()">🏆 Test Winner Sound</button>
+    <button onclick="testTryAgainSound()">🔄 Test Try Again Sound</button>
+    
+    <div class="status" id="status">Ready to test sounds...</div>
+
+    <script>
+        let spinAudio = new Audio('/sounds/spin.mp3');
+        let winnerAudio = new Audio('/sounds/winner.mp3');
+        let tryAgainAudio = new Audio('/sounds/try-again.mp3');
+
+        spinAudio.volume = 0.5;
+        winnerAudio.volume = 0.7;
+        tryAgainAudio.volume = 0.6;
+
+        function updateStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.style.background = isError ? '#d32f2f' : '#333';
+        }
+
+        function testSpinSound() {
+            updateStatus('Playing spin sound...');
+            spinAudio.currentTime = 0;
+            spinAudio.play()
+                .then(() => updateStatus('✅ Spin sound playing!'))
+                .catch(err => updateStatus('❌ Error: ' + err.message, true));
+        }
+
+        function testWinnerSound() {
+            updateStatus('Playing winner sound...');
+            winnerAudio.currentTime = 0;
+            winnerAudio.play()
+                .then(() => updateStatus('✅ Winner sound playing!'))
+                .catch(err => updateStatus('❌ Error: ' + err.message, true));
+        }
+
+        function testTryAgainSound() {
+            updateStatus('Playing try again sound...');
+            tryAgainAudio.currentTime = 0;
+            tryAgainAudio.play()
+                .then(() => updateStatus('✅ Try again sound playing!'))
+                .catch(err => updateStatus('❌ Error: ' + err.message, true));
+        }
+
+        // Preload
+        spinAudio.load();
+        winnerAudio.load();
+        tryAgainAudio.load();
+
+        updateStatus('✅ All sounds loaded. Click buttons to test!');
+    </script>
+</body>
+</html>
