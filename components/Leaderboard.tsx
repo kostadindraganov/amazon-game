@@ -43,6 +43,10 @@ export default function Leaderboard() {
 
   const currentWinner = winners[currentIndex];
 
+  if (!currentWinner) {
+    return null;
+  }
+
   return (
     <div className="w-full  mx-auto mt-2 px-4">
       <div className="max-h-[170px] overflow-hidden border-2 border-solid border-yellow-300 rounded-lg">
@@ -85,7 +89,7 @@ export default function Leaderboard() {
                 <p className="text-xs md:text-lg text-yellow-300 mb-1">ПОБЕДИТЕЛ:</p>
                 <p className="text-lg md:text-2xl font-bold text-white truncate">
                   {currentWinner.username}
-                </p> 
+                </p>
               </div>
 
               {/* Column 4: Price */}

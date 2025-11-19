@@ -50,6 +50,29 @@ export default function AdminQueues() {
     }
   };
 
+  const handleClearQueue = async () => {
+    if (!confirm('Are you sure you want to clear the ENTIRE queue? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/admin/queue', {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to clear queue');
+      }
+
+      // Refresh the queue
+      await fetchQueue();
+      alert('Queue cleared successfully');
+    } catch (error) {
+      console.error('Error clearing queue:', error);
+      alert('Failed to clear queue');
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
@@ -69,7 +92,15 @@ export default function AdminQueues() {
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-bold text-casino-gold">Game Queue Management</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-4xl font-bold text-casino-gold">Game Queue Management</h1>
+          <button
+            onClick={handleClearQueue}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm font-bold uppercase tracking-wider shadow-lg hover:shadow-red-900/20"
+          >
+            Clear Queue
+          </button>
+        </div>
         <div className="flex gap-6">
           <div className="text-right">
             <p className="text-sm text-gray-400">Pending</p>

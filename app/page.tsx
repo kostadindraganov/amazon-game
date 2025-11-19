@@ -38,10 +38,11 @@ export default function Home() {
           </h1>
           <div className="flex items-center justify-center gap-2 text-5xl text-casino-gold font-semibold">
             <span>{settings.headline_text} </span>
-
-            <span className="text-md text-white font-bold">: {settings.min_points_for_play}</span>
-            <img src="/coin.png" alt="Coin" className="w-8 h-8" />
-            <span className="text-md text-white">монети</span>
+          </div>
+          <div className="flex items-center justify-center gap-2 text-5xl text-casino-gold font-semibold my-3">
+            <span className="text-6xl text-white font-bold">{settings.min_points_for_play}</span>
+            <img src="/coin.png" alt="Coin" className="w-10 h-10" />
+            <span className="text-2xl text-white">монети</span>
           </div>
         </div>
 
