@@ -23,6 +23,8 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
   const [isIdle, setIsIdle] = useState<boolean>(false);
   const lastActivityTimeRef = useRef<number>(Date.now());
 
+  const [isShowingResult, setIsShowingResult] = useState<boolean>(false);
+
   // Sound effects
   const { playSpinSound, playWinnerSound, playTryAgainSound, stopSpinSound, unlockAudio, isAudioUnlocked } = useSoundEffects();
 
@@ -100,8 +102,8 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
       const res = await fetch('/api/game/current');
       const data = await res.json();
 
-      // Don't check for next player if winner modal is showing or if spinning
-      if (data.currentPlayer && !isSpinning && !isWinnerModalShowing) {
+      // Don't check for next player if winner modal is showing, shuffling, spinning, or showing result
+      if (data.currentPlayer && !isSpinning && !isShuffling && !isWinnerModalShowing && !isShowingResult) {
         if (currentQueueId === data.currentPlayer.id) {
           lastActivityTimeRef.current = Date.now();
           setIsIdle(false);
@@ -126,30 +128,30 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     } catch (error) {
       // Silently handle error
     }
-  }, [isSpinning, isWinnerModalShowing, currentQueueId, sliderItems.length]);
+  }, [isSpinning, isShuffling, isWinnerModalShowing, isShowingResult, currentQueueId, sliderItems.length]);
 
   // Idle check interval
   useEffect(() => {
     const idleInterval = setInterval(() => {
       const timeSinceLastActivity = Date.now() - lastActivityTimeRef.current;
       // 20 seconds idle timeout
-      if (timeSinceLastActivity > 20000 && !isSpinning && !currentQueueId && !isWinnerModalShowing && !isIdle) {
+      if (timeSinceLastActivity > 20000 && !isSpinning && !isShuffling && !currentQueueId && !isWinnerModalShowing && !isIdle && !isShowingResult) {
         setIsIdle(true);
       }
     }, 1000);
 
     return () => clearInterval(idleInterval);
-  }, [isSpinning, currentQueueId, isWinnerModalShowing, isIdle]);
+  }, [isSpinning, isShuffling, currentQueueId, isWinnerModalShowing, isIdle, isShowingResult]);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (!isSpinning) {
+      if (!isSpinning && !isShuffling) {
         checkForNextPlayer();
       }
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [isSpinning, checkForNextPlayer]);
+  }, [isSpinning, isShuffling, checkForNextPlayer]);
 
   const spinCarousel = useCallback(async (queueId: number) => {
     // Reset idle timer
@@ -276,8 +278,9 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     const spinData = spinDataRef.current;
     const queueId = queueIdRef.current;
 
+    // Block next player checks immediately
+    setIsShowingResult(true);
     setIsSpinning(false);
-    setCurrentQueueId(null);
 
     // Stop spin sound
     stopSpinSound();
@@ -288,8 +291,15 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     if (spinData?.isWinner) {
       // Play winner sound
       playWinnerSound();
+
+      // Clear current player immediately for winner flow
+      setCurrentQueueId(null);
+
       // Set flag to prevent checkForNextPlayer from running
       setIsWinnerModalShowing(true);
+      // We can turn off showing result since modal handles the blocking now
+      setIsShowingResult(false);
+
       window.dispatchEvent(new CustomEvent('showWinner', {
         detail: {
           username: spinData.winner?.username,
@@ -302,22 +312,28 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
       // Play try again sound for non-winners
       playTryAgainSound();
 
-      // For non-winners, proceed immediately to next player if available
-      if (spinData?.remainingPlays > 0) {
-        try {
-          const currentRes = await fetch('/api/game/current');
-          const currentData = await currentRes.json();
+      // Wait 5 seconds before clearing the board and allowing next player
+      setTimeout(async () => {
+        setCurrentQueueId(null);
+        setIsShowingResult(false);
 
-          if (currentData.currentPlayer) {
-            setPendingSpinQueueId(queueId);
-            window.dispatchEvent(new CustomEvent('showPlayer', {
-              detail: { username: currentData.currentPlayer.username }
-            }));
+        // For non-winners, proceed to next player if available (re-play or new player)
+        if (spinData?.remainingPlays > 0) {
+          try {
+            const currentRes = await fetch('/api/game/current');
+            const currentData = await currentRes.json();
+
+            if (currentData.currentPlayer) {
+              setPendingSpinQueueId(queueId);
+              window.dispatchEvent(new CustomEvent('showPlayer', {
+                detail: { username: currentData.currentPlayer.username }
+              }));
+            }
+          } catch (error) {
+            // Silently handle error
           }
-        } catch (error) {
-          // Silently handle error
         }
-      }
+      }, 5000);
     }
 
     // Cleanup refs

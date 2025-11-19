@@ -102,46 +102,7 @@ export async function POST(request: NextRequest) {
         configuredWinAt: winningProduct.win_at_spin_count
       });
     } else {
-      // STEP 2: Check global win frequency (FALLBACK)
-      const isGlobalWinningSpin = currentSpinCount % settings.spin_count_to_win === 0;
-
-      console.log('🎲 [POST /api/game/spin] Checking global win frequency:', {
-        isGlobalWin: isGlobalWinningSpin,
-        calculation: `${currentSpinCount} % ${settings.spin_count_to_win} === 0`
-      });
-
-      if (isGlobalWinningSpin) {
-        console.log('🏆 [POST /api/game/spin] GLOBAL FREQUENCY WIN! Fetching active products...');
-
-        // Get all active products for random selection
-        const { data: activeProducts, error: productsError } = await supabase
-          .from('products')
-          .select('*')
-          .eq('status', 'active');
-
-        if (productsError) throw productsError;
-
-        console.log('📦 [POST /api/game/spin] Active products count:', activeProducts?.length || 0);
-
-        if (activeProducts && activeProducts.length > 0) {
-          isWinner = true;
-          winType = 'global-frequency';
-
-          // Randomly select a product
-          const randomIndex = Math.floor(Math.random() * activeProducts.length);
-          winningProduct = activeProducts[randomIndex];
-
-          console.log('🎁 [POST /api/game/spin] Selected winning product:', {
-            id: winningProduct.id,
-            title: winningProduct.title,
-            price: winningProduct.price
-          });
-        } else {
-          console.warn('⚠️  [POST /api/game/spin] No active products available for winning!');
-        }
-      } else {
-        console.log('🎯 [POST /api/game/spin] Not a winning spin, player gets "Try Again"');
-      }
+      console.log('🎯 [POST /api/game/spin] No product-specific win found. Player gets "Try Again"');
     }
 
     // STEP 3: Process winner (if applicable)
