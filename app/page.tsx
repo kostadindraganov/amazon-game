@@ -18,6 +18,8 @@ export default function Home() {
       .catch(console.error);
   }, []);
 
+  console.log(settings);
+
   if (!settings) {
     return (
       <div className="min-h-screen flex items-center justify-center casino-gradient">
@@ -31,12 +33,16 @@ export default function Home() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-4">
-          <h1 className="text-6xl font-bold mb-4 neon-text animate-glow">
-            🎰 
+          <h1 className="text-4xl font-bold mb-4">
+            🎰 Играй за тези награди 🎰
           </h1>
-          <p className="text-2xl text-casino-gold font-semibold">
-            {settings.headline_text || `Играй за награди като изпратиш ${settings.min_points_for_play} точки`}
-          </p>
+          <div className="flex items-center justify-center gap-2 text-5xl text-casino-gold font-semibold">
+            <span>{settings.headline_text} </span>
+
+            <span className="text-md text-white font-bold">: {settings.min_points_for_play}</span>
+            <img src="/coin.png" alt="Coin" className="w-8 h-8" />
+            <span className="text-md text-white">монети</span>
+          </div>
         </div>
 
         {/* Game Carousel */}
