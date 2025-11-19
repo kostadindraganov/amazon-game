@@ -62,14 +62,20 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
         }}
       >
         {isFiller ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-white font-bold text-2xl text-center leading-tight">
+          <div className="flex items-center justify-center h-full w-full px-2">
+            <div
+              className="text-white font-extrabold text-4xl text-center leading-tight overflow-hidden text-ellipsis line-clamp-3 "
+              style={{
+                textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8)',
+                letterSpacing: '0.05em'
+              }}
+            >
               {item.title}
             </div>
           </div>
         ) : (
           <>
-            <div className="text-white text-sm font-semibold text-center leading-tight">
+            <div className="text-white text-3xl font-semibold text-center leading-tight overflow-hidden text-ellipsis line-clamp-2">
               {item.title}
             </div>
             <div className="relative flex-shrink-0" style={{ width: '180px', height: '180px' }}>
@@ -81,7 +87,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
                 unoptimized
               />
             </div>
-            <div className="text-yellow-400 text-xl font-bold">
+            <div className="text-yellow-400 text-4xl font-bold">
               {item.price} лв
             </div>
           </>
@@ -96,8 +102,8 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
       className="absolute top-0 bottom-0 z-20"
       style={{
         left: '50%',
-        width: '3px',
-        backgroundColor: '#666',
+        width: '5px',
+        backgroundColor: '#fbcd00ff',
         transform: 'translateX(-1.5px)',
       }}
     />
