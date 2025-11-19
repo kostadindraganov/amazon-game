@@ -62,78 +62,128 @@ export async function POST(request: NextRequest) {
 
     console.log('🔢 [POST /api/game/spin] Spin count incremented to:', currentSpinCount);
 
-    // Determine if this is a winning spin
-    const isWinningSpin = currentSpinCount % settings.spin_count_to_win === 0;
-
-    console.log('🎲 [POST /api/game/spin] Is winning spin?', isWinningSpin, `(${currentSpinCount} % ${settings.spin_count_to_win} === 0)`);
+    // ============================================
+    // WINNING LOGIC - Priority Order:
+    // 1. Product-Specific Win (win_at_spin_count matches current_spin_count)
+    // 2. Global Win Frequency (current_spin_count % spin_count_to_win === 0)
+    // 3. No Win (Try Again)
+    // ============================================
 
     let winnerData = null;
     let winningProduct = null;
+    let isWinner = false;
+    let winType = 'none'; // 'product-specific', 'global-frequency', or 'none'
 
-    if (isWinningSpin) {
-      console.log('🏆 [POST /api/game/spin] WINNING SPIN! Fetching active products...');
+    // STEP 1: Check for product-specific wins (HIGHEST PRIORITY)
+    console.log('🎯 [POST /api/game/spin] Checking for product-specific wins...');
+    const { data: productSpecificWinners, error: specificWinError } = await supabase
+      .from('products')
+      .select('*')
+      .eq('status', 'active')
+      .eq('win_at_spin_count', currentSpinCount);
 
-      // Get active products
-      const { data: activeProducts, error: productsError } = await supabase
-        .from('products')
-        .select('*')
-        .eq('status', 'active');
+    if (specificWinError) {
+      console.error('❌ [POST /api/game/spin] Error checking product-specific wins:', specificWinError);
+    }
 
-      if (productsError) throw productsError;
+    if (productSpecificWinners && productSpecificWinners.length > 0) {
+      // Product-specific win found!
+      isWinner = true;
+      winType = 'product-specific';
 
-      console.log('📦 [POST /api/game/spin] Active products count:', activeProducts?.length || 0);
+      // If multiple products match, select randomly
+      const randomIndex = Math.floor(Math.random() * productSpecificWinners.length);
+      winningProduct = productSpecificWinners[randomIndex];
 
-      if (activeProducts && activeProducts.length > 0) {
-        // Randomly select a product
-        const randomIndex = Math.floor(Math.random() * activeProducts.length);
-        winningProduct = activeProducts[randomIndex];
-
-        console.log('🎁 [POST /api/game/spin] Selected winning product:', {
-          id: winningProduct.id,
-          title: winningProduct.title,
-          price: winningProduct.price
-        });
-
-        // Mark product as won
-        const { error: updateError } = await supabaseAdmin
-          .from('products')
-          .update({
-            status: 'won',
-            won_at: new Date().toISOString()
-          })
-          .eq('id', winningProduct.id);
-
-        if (updateError) throw updateError;
-
-        console.log('✅ [POST /api/game/spin] Product marked as won');
-
-        // Insert winner record
-        const { data: winner, error: winnerError } = await supabaseAdmin
-          .from('winners')
-          .insert({
-            username: queueEntry.username,
-            product_id: winningProduct.id,
-            product_title: winningProduct.title,
-            product_price: winningProduct.price,
-            product_image_url: winningProduct.image_url
-          })
-          .select()
-          .single();
-
-        if (winnerError) throw winnerError;
-
-        winnerData = winner;
-
-        console.log('🏅 [POST /api/game/spin] Winner record created:', {
-          id: winner.id,
-          username: queueEntry.username,
-          product: winningProduct.title
-        });
-      } else {
-        console.warn('⚠️  [POST /api/game/spin] No active products available for winning!');
-      }
+      console.log('🎊 [POST /api/game/spin] PRODUCT-SPECIFIC WIN!', {
+        spinCount: currentSpinCount,
+        matchingProducts: productSpecificWinners.length,
+        selectedProduct: winningProduct.title,
+        configuredWinAt: winningProduct.win_at_spin_count
+      });
     } else {
-      console.log('🎯 [POST /api/game/spin] Not a winning spin, player gets "Try Again"');
+      // STEP 2: Check global win frequency (FALLBACK)
+      const isGlobalWinningSpin = currentSpinCount % settings.spin_count_to_win === 0;
+
+      console.log('🎲 [POST /api/game/spin] Checking global win frequency:', {
+        isGlobalWin: isGlobalWinningSpin,
+        calculation: `${currentSpinCount} % ${settings.spin_count_to_win} === 0`
+      });
+
+      if (isGlobalWinningSpin) {
+        console.log('🏆 [POST /api/game/spin] GLOBAL FREQUENCY WIN! Fetching active products...');
+
+        // Get all active products for random selection
+        const { data: activeProducts, error: productsError } = await supabase
+          .from('products')
+          .select('*')
+          .eq('status', 'active');
+
+        if (productsError) throw productsError;
+
+        console.log('📦 [POST /api/game/spin] Active products count:', activeProducts?.length || 0);
+
+        if (activeProducts && activeProducts.length > 0) {
+          isWinner = true;
+          winType = 'global-frequency';
+
+          // Randomly select a product
+          const randomIndex = Math.floor(Math.random() * activeProducts.length);
+          winningProduct = activeProducts[randomIndex];
+
+          console.log('🎁 [POST /api/game/spin] Selected winning product:', {
+            id: winningProduct.id,
+            title: winningProduct.title,
+            price: winningProduct.price
+          });
+        } else {
+          console.warn('⚠️  [POST /api/game/spin] No active products available for winning!');
+        }
+      } else {
+        console.log('🎯 [POST /api/game/spin] Not a winning spin, player gets "Try Again"');
+      }
+    }
+
+    // STEP 3: Process winner (if applicable)
+    if (isWinner && winningProduct) {
+      console.log(`✨ [POST /api/game/spin] Processing ${winType} winner...`);
+
+      // Mark product as won
+      const { error: updateError } = await supabaseAdmin
+        .from('products')
+        .update({
+          status: 'won',
+          won_at: new Date().toISOString()
+        })
+        .eq('id', winningProduct.id);
+
+      if (updateError) throw updateError;
+
+      console.log('✅ [POST /api/game/spin] Product marked as won');
+
+      // Insert winner record
+      const { data: winner, error: winnerError } = await supabaseAdmin
+        .from('winners')
+        .insert({
+          username: queueEntry.username,
+          product_id: winningProduct.id,
+          product_title: winningProduct.title,
+          product_price: winningProduct.price,
+          product_image_url: winningProduct.image_url
+        })
+        .select()
+        .single();
+
+      if (winnerError) throw winnerError;
+
+      winnerData = winner;
+
+      console.log('🏅 [POST /api/game/spin] Winner record created:', {
+        id: winner.id,
+        username: queueEntry.username,
+        product: winningProduct.title,
+        winType
+      });
     }
 
     // Decrement plays or mark as done
@@ -169,7 +219,7 @@ export async function POST(request: NextRequest) {
 
     const response = {
       success: true,
-      isWinner: isWinningSpin && winningProduct !== null,
+      isWinner: isWinner && winningProduct !== null,
       winner: winnerData,
       product: winningProduct,
       spinCount: currentSpinCount,

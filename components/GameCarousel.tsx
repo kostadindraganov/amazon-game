@@ -17,6 +17,7 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
   const [currentQueueId, setCurrentQueueId] = useState<number | null>(null);
   const [pendingSpinQueueId, setPendingSpinQueueId] = useState<number | null>(null);
   const [isShuffling, setIsShuffling] = useState<boolean>(false);
+  const [isWinnerModalShowing, setIsWinnerModalShowing] = useState<boolean>(false);
 
   // Sound effects
   const { playSpinSound, playWinnerSound, playTryAgainSound, stopSpinSound, unlockAudio, isAudioUnlocked } = useSoundEffects();
@@ -138,7 +139,8 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
       const res = await fetch('/api/game/current');
       const data = await res.json();
 
-      if (data.currentPlayer && !isSpinning) {
+      // Don't check for next player if winner modal is showing or if spinning
+      if (data.currentPlayer && !isSpinning && !isWinnerModalShowing) {
         if (currentQueueId === data.currentPlayer.id) {
           return;
         }
@@ -157,14 +159,14 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     } catch (error) {
       // Silently handle error
     }
-  }, [isSpinning, currentQueueId, sliderItems.length]);
+  }, [isSpinning, isWinnerModalShowing, currentQueueId, sliderItems.length]);
 
   useEffect(() => {
     const interval = setInterval(() => {
       if (!isSpinning) {
         checkForNextPlayer();
       }
-    }, 2000);
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [isSpinning, checkForNextPlayer]);
@@ -299,24 +301,22 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     if (spinData?.isWinner) {
       // Play winner sound
       playWinnerSound();
+      // Set flag to prevent checkForNextPlayer from running
+      setIsWinnerModalShowing(true);
       window.dispatchEvent(new CustomEvent('showWinner', {
         detail: {
           username: spinData.winner?.username,
           product: spinData.product
         }
       }));
+
+      // Don't proceed to next player here - wait for winnerModalClosed event
     } else {
       // Play try again sound for non-winners
       playTryAgainSound();
-    }
 
-    // Note: fetchSliderItems() moved to start of spinCarousel
-    // This prevents cards from changing after spin completes
-
-    if (spinData?.remainingPlays > 0) {
-      const waitTime = spinData.isWinner ? 5000 : 0;
-
-      setTimeout(async () => {
+      // For non-winners, proceed immediately to next player if available
+      if (spinData?.remainingPlays > 0) {
         try {
           const currentRes = await fetch('/api/game/current');
           const currentData = await currentRes.json();
@@ -330,13 +330,13 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
         } catch (error) {
           // Silently handle error
         }
-      }, waitTime);
+      }
     }
 
     // Cleanup refs
     spinDataRef.current = null;
     queueIdRef.current = null;
-  }, [setIsSpinning, setCurrentQueueId, fetchSliderItems, stopSpinSound, playWinnerSound, playTryAgainSound]);
+  }, [setIsSpinning, setCurrentQueueId, stopSpinSound, playWinnerSound, playTryAgainSound]);
 
   useEffect(() => {
     const handlePlayerModalClosed = () => {
@@ -349,6 +349,31 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     window.addEventListener('playerModalClosed', handlePlayerModalClosed);
     return () => window.removeEventListener('playerModalClosed', handlePlayerModalClosed);
   }, [pendingSpinQueueId, spinCarousel]);
+
+  useEffect(() => {
+    const handleWinnerModalClosed = async () => {
+      // Clear the winner modal showing flag
+      setIsWinnerModalShowing(false);
+
+      // When winner modal closes, check for next player
+      try {
+        const currentRes = await fetch('/api/game/current');
+        const currentData = await currentRes.json();
+
+        if (currentData.currentPlayer) {
+          setPendingSpinQueueId(currentData.currentPlayer.id);
+          window.dispatchEvent(new CustomEvent('showPlayer', {
+            detail: { username: currentData.currentPlayer.username }
+          }));
+        }
+      } catch (error) {
+        // Silently handle error
+      }
+    };
+
+    window.addEventListener('winnerModalClosed', handleWinnerModalClosed);
+    return () => window.removeEventListener('winnerModalClosed', handleWinnerModalClosed);
+  }, []);
 
   if (sliderItems.length === 0) {
     return (
