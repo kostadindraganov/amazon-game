@@ -53,10 +53,41 @@ export default function AdminWinners() {
     }
   };
 
+  const handleClearAll = async () => {
+    if (!confirm('Are you sure you want to delete ALL winners history? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/admin/winners?action=clear_all', {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to clear history');
+      }
+
+      // Refresh the winners list
+      await fetchWinners();
+      alert('History cleared successfully');
+    } catch (error) {
+      console.error('Error clearing history:', error);
+      alert('Failed to clear history');
+    }
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-bold text-casino-gold">Winners History</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-4xl font-bold text-casino-gold">Winners History</h1>
+          <button
+            onClick={handleClearAll}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm font-bold uppercase tracking-wider shadow-lg hover:shadow-red-900/20"
+          >
+            Clear History
+          </button>
+        </div>
         <div className="text-right">
           <p className="text-sm text-gray-400">Total Winners</p>
           <p className="text-3xl font-bold text-casino-gold">{total}</p>

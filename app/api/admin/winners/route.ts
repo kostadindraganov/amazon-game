@@ -37,6 +37,18 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    const action = searchParams.get('action');
+
+    if (action === 'clear_all') {
+      const { error } = await supabaseAdmin
+        .from('winners')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all rows
+
+      if (error) throw error;
+
+      return NextResponse.json({ success: true, message: 'All winners deleted' });
+    }
 
     if (!id) {
       return NextResponse.json(

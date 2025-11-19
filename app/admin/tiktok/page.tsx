@@ -5,24 +5,14 @@ import type { TikTokSettings, TikTokGiftLog } from '@/lib/supabase';
 
 interface GiftLogsResponse {
   logs: TikTokGiftLog[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+  total: number;
 }
 
 export default function TikTokLivePage() {
   const [settings, setSettings] = useState<TikTokSettings | null>(null);
   const [username, setUsername] = useState('');
   const [logs, setLogs] = useState<TikTokGiftLog[]>([]);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 50,
-    total: 0,
-    totalPages: 0,
-  });
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState('');
@@ -45,14 +35,14 @@ export default function TikTokLivePage() {
   };
 
   // Fetch logs
-  const fetchLogs = async (page = 1) => {
+  const fetchLogs = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/admin/tiktok/logs?page=${page}&limit=50`);
+      const response = await fetch('/api/admin/tiktok/logs');
       if (!response.ok) throw new Error('Failed to fetch logs');
       const data: GiftLogsResponse = await response.json();
       setLogs(data.logs);
-      setPagination(data.pagination);
+      setTotal(data.total);
     } catch (err: any) {
       console.error('Error fetching logs:', err);
       setError(err.message || 'Failed to fetch logs');
@@ -134,7 +124,8 @@ export default function TikTokLivePage() {
       if (!response.ok) throw new Error('Failed to clear logs');
 
       setSuccess('Logs cleared successfully!');
-      await fetchLogs(1);
+      setSuccess('Logs cleared successfully!');
+      await fetchLogs();
     } catch (err: any) {
       console.error('Error clearing logs:', err);
       setError(err.message || 'Failed to clear logs');
@@ -144,12 +135,12 @@ export default function TikTokLivePage() {
   // Initial load
   useEffect(() => {
     fetchSettings();
-    fetchLogs(1);
+    fetchLogs();
 
     // Auto-refresh every 5 seconds
     const interval = setInterval(() => {
       fetchSettings();
-      fetchLogs(pagination.page);
+      fetchLogs();
     }, 5000);
 
     return () => clearInterval(interval);
@@ -270,7 +261,7 @@ export default function TikTokLivePage() {
           <div>
             <h2 className="text-xl font-semibold text-white">Gift Logs</h2>
             <p className="text-sm text-gray-400 mt-1">
-              Total: {pagination.total} gifts received
+              Total: {total} gifts received
             </p>
           </div>
           <button
@@ -288,16 +279,16 @@ export default function TikTokLivePage() {
             No gifts received yet. Connect to a live stream to start tracking.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="text-xs uppercase bg-gray-700 text-gray-300">
+          <div className="overflow-x-auto h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+            <table className="w-full text-left text-sm relative">
+              <thead className="text-xs uppercase bg-gray-700 text-gray-300 sticky top-0 z-10">
                 <tr>
-                  <th className="px-4 py-3">Time</th>
-                  <th className="px-4 py-3">Username</th>
-                  <th className="px-4 py-3">Gift</th>
-                  <th className="px-4 py-3">Count</th>
-                  <th className="px-4 py-3">Points</th>
-                  <th className="px-4 py-3">Total Points</th>
+                  <th className="px-4 py-3 bg-gray-700">Time</th>
+                  <th className="px-4 py-3 bg-gray-700">Username</th>
+                  <th className="px-4 py-3 bg-gray-700">Gift</th>
+                  <th className="px-4 py-3 bg-gray-700">Count</th>
+                  <th className="px-4 py-3 bg-gray-700">Points</th>
+                  <th className="px-4 py-3 bg-gray-700">Total Points</th>
                 </tr>
               </thead>
               <tbody>
@@ -327,29 +318,7 @@ export default function TikTokLivePage() {
         )}
 
         {/* Pagination */}
-        {pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-700">
-            <p className="text-sm text-gray-400">
-              Page {pagination.page} of {pagination.totalPages}
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => fetchLogs(pagination.page - 1)}
-                disabled={pagination.page === 1 || loading}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg text-sm font-semibold transition-colors"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => fetchLogs(pagination.page + 1)}
-                disabled={pagination.page >= pagination.totalPages || loading}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg text-sm font-semibold transition-colors"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
+
       </div>
     </div>
   );

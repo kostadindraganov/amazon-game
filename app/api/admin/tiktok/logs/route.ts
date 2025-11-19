@@ -3,33 +3,18 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const offset = (page - 1) * limit;
-
-    // Get total count
-    const { count } = await supabaseAdmin
-      .from('tiktok_gift_logs')
-      .select('*', { count: 'exact', head: true });
-
-    // Get paginated logs
+    // Get logs (limit to 1000 for performance, but effectively "all" for recent session)
     const { data, error } = await supabaseAdmin
       .from('tiktok_gift_logs')
       .select('*')
       .order('received_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .limit(1000);
 
     if (error) throw error;
 
     return NextResponse.json({
       logs: data || [],
-      pagination: {
-        page,
-        limit,
-        total: count || 0,
-        totalPages: Math.ceil((count || 0) / limit),
-      },
+      total: data?.length || 0
     });
   } catch (error: any) {
     console.error('Error fetching TikTok logs:', error);
