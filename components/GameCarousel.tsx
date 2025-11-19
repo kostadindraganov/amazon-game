@@ -399,14 +399,14 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
         <div
           className="absolute left-0 top-0 bottom-0 z-10 pointer-events-none"
           style={{
-            width: '300px',
+            width: '80px',
             background: 'linear-gradient(to right, #191B28 0%, transparent 100%)',
           }}
         />
         <div
           className="absolute right-0 top-0 bottom-0 z-10 pointer-events-none"
           style={{
-            width: '300px',
+            width: '80px',
             background: 'linear-gradient(to left, #191B28 0%, transparent 100%)',
           }}
         />

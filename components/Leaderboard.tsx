@@ -87,7 +87,7 @@ export default function Leaderboard() {
                 </div>
 
                 {/* Price Overlay (Bottom Right) */}
-                <div className="absolute bottom-0 right-0 bg-green-600/90 backdrop-blur-sm text-white font-black px-3 py-1 rounded-tl-xl text-lg shadow-lg border-t border-l border-white/20 z-10">
+                <div className="absolute bottom-0 right-0 bg-red-600/90 backdrop-blur-sm text-white font-black px-3 py-1 rounded-tl-xl text-lg shadow-lg border-t border-l border-white/20 z-10">
                   {currentWinner.product_price} лв
                 </div>
               </div>
