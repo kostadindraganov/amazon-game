@@ -46,7 +46,7 @@ export default function WinnerModal() {
           </h2>
 
           <p className="text-5xl font-bold text-center mb-3 text-white">
-            на - {winnerData.username}
+            {winnerData.username}
           </p>
 
           <p className="text-3xl font-bold text-center text-casino-gold mb-2">

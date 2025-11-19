@@ -5,6 +5,8 @@ import Image from 'next/image';
 import type { SliderItem } from '@/lib/supabase';
 import { SpinRoulette } from 'react-spin-roulette';
 import { useSoundEffects } from '@/lib/useSoundEffects';
+import IdleProductShowcase from './IdleProductShowcase';
+import GameCard from './GameCard';
 
 interface GameCarouselProps {
   isSpinning: boolean;
@@ -18,6 +20,8 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
   const [pendingSpinQueueId, setPendingSpinQueueId] = useState<number | null>(null);
   const [isShuffling, setIsShuffling] = useState<boolean>(false);
   const [isWinnerModalShowing, setIsWinnerModalShowing] = useState<boolean>(false);
+  const [isIdle, setIsIdle] = useState<boolean>(false);
+  const lastActivityTimeRef = useRef<number>(Date.now());
 
   // Sound effects
   const { playSpinSound, playWinnerSound, playTryAgainSound, stopSpinSound, unlockAudio, isAudioUnlocked } = useSoundEffects();
@@ -38,62 +42,19 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     [sliderItems]
   );
 
+  const productItems = useMemo(() =>
+    sliderItems.filter(item => item.type === 'product'),
+    [sliderItems]
+  );
+
   // Custom prize renderer for cards
   const renderPrize = useCallback((prize: any) => {
     const item = prize.value as SliderItem;
-    const isFiller = item.type === 'filler';
     const index = prize.index as number;
-
-    let cardColor = '#2D3035';
-    if (isFiller) {
-      cardColor = '#F95146';
-    } else if (index % 3 === 0) {
-      cardColor = '#00C74D';
-    }
+    const isFiller = item.type === 'filler';
 
     return (
-      <div
-        className="flex flex-col items-center justify-between rounded-lg overflow-hidden"
-        style={{
-          width: '240px',
-          height: '340px',
-          backgroundColor: cardColor,
-          border: '2px solid rgba(255, 255, 255, 0.1)',
-          padding: '16px',
-        }}
-      >
-        {isFiller ? (
-          <div className="flex items-center justify-center h-full w-full px-2">
-            <div
-              className="text-white font-extrabold text-4xl text-center leading-tight overflow-hidden text-ellipsis line-clamp-3 "
-              style={{
-                textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8)',
-                letterSpacing: '0.05em'
-              }}
-            >
-              {item.title}
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="text-white text-3xl font-semibold text-center leading-tight overflow-hidden text-ellipsis line-clamp-2">
-              {item.title}
-            </div>
-            <div className="relative flex-shrink-0" style={{ width: '180px', height: '180px' }}>
-              <Image
-                src={item.image_url}
-                alt={item.title}
-                fill
-                className="object-contain"
-                unoptimized
-              />
-            </div>
-            <div className="text-yellow-400 text-4xl font-bold">
-              {item.price} лв
-            </div>
-          </>
-        )}
-      </div>
+      <GameCard item={item} index={index} isFiller={isFiller} />
     );
   }, []);
 
@@ -142,6 +103,8 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
       // Don't check for next player if winner modal is showing or if spinning
       if (data.currentPlayer && !isSpinning && !isWinnerModalShowing) {
         if (currentQueueId === data.currentPlayer.id) {
+          lastActivityTimeRef.current = Date.now();
+          setIsIdle(false);
           return;
         }
 
@@ -152,6 +115,10 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
         setCurrentQueueId(data.currentPlayer.id);
         setPendingSpinQueueId(data.currentPlayer.id);
 
+        // Reset idle state when new player appears
+        lastActivityTimeRef.current = Date.now();
+        setIsIdle(false);
+
         window.dispatchEvent(new CustomEvent('showPlayer', {
           detail: { username: data.currentPlayer.username }
         }));
@@ -160,6 +127,19 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
       // Silently handle error
     }
   }, [isSpinning, isWinnerModalShowing, currentQueueId, sliderItems.length]);
+
+  // Idle check interval
+  useEffect(() => {
+    const idleInterval = setInterval(() => {
+      const timeSinceLastActivity = Date.now() - lastActivityTimeRef.current;
+      // 20 seconds idle timeout
+      if (timeSinceLastActivity > 20000 && !isSpinning && !currentQueueId && !isWinnerModalShowing && !isIdle) {
+        setIsIdle(true);
+      }
+    }, 1000);
+
+    return () => clearInterval(idleInterval);
+  }, [isSpinning, currentQueueId, isWinnerModalShowing, isIdle]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -172,6 +152,10 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
   }, [isSpinning, checkForNextPlayer]);
 
   const spinCarousel = useCallback(async (queueId: number) => {
+    // Reset idle timer
+    lastActivityTimeRef.current = Date.now();
+    setIsIdle(false);
+
     // Fetch fresh slider items before shuffling
     // This ensures we have up-to-date data but cards only change during shuffle overlay
     let freshItems: SliderItem[];
@@ -298,6 +282,9 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
     // Stop spin sound
     stopSpinSound();
 
+    // Reset idle timer
+    lastActivityTimeRef.current = Date.now();
+
     if (spinData?.isWinner) {
       // Play winner sound
       playWinnerSound();
@@ -408,20 +395,24 @@ export default function GameCarousel({ isSpinning, setIsSpinning }: GameCarousel
           }}
         />
 
-        <SpinRoulette
-          prizes={prizes}
-          winningIndex={winningIndex}
-          isSpinning={isSpinning}
-          onComplete={handleSpinComplete}
-          duration={8000}
-          orientation="horizontal"
-          prizeSize={264}
-          minSpins={1}
-          className="w-full h-full"
-          renderPrize={renderPrize}
-          renderIndicator={renderIndicator}
-          easing="cubic-bezier(0.65, 0, 0.35, 1)"
-        />
+        {isIdle && !isSpinning && !currentQueueId ? (
+          <IdleProductShowcase products={productItems} />
+        ) : (
+          <SpinRoulette
+            prizes={prizes}
+            winningIndex={winningIndex}
+            isSpinning={isSpinning}
+            onComplete={handleSpinComplete}
+            duration={8000}
+            orientation="horizontal"
+            prizeSize={264}
+            minSpins={1}
+            className="w-full h-full"
+            renderPrize={renderPrize}
+            renderIndicator={renderIndicator}
+            easing="cubic-bezier(0.65, 0, 0.35, 1)"
+          />
+        )}
 
         {/* Shuffling overlay */}
         {isShuffling && (

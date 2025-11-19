@@ -19,10 +19,7 @@ const config: Config = {
           darkBg: "#0F0A1E",
         },
       },
-      animation: {
-        'neon-pulse': 'neon-pulse 2s ease-in-out infinite',
-        'glow': 'glow 1.5s ease-in-out infinite alternate',
-      },
+
       keyframes: {
         'neon-pulse': {
           '0%, 100%': { opacity: '1' },
@@ -36,6 +33,15 @@ const config: Config = {
             textShadow: '0 0 20px #fff, 0 0 30px #FFD700, 0 0 40px #FFD700, 0 0 50px #FFD700, 0 0 60px #FFD700',
           },
         },
+        marquee: {
+          '0%': { transform: 'translateX(0%)' },
+          '100%': { transform: 'translateX(-100%)' },
+        },
+      },
+      animation: {
+        'neon-pulse': 'neon-pulse 2s ease-in-out infinite',
+        'glow': 'glow 1.5s ease-in-out infinite alternate',
+        'marquee': 'marquee 30s linear infinite',
       },
     },
   },
