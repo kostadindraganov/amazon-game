@@ -22,8 +22,8 @@ export default function GameCard({ item, index, isFiller = false }: GameCardProp
                 width: '240px',
                 height: '340px',
                 backgroundColor: cardColor,
-                border: '2px solid rgba(255, 255, 255, 0.1)',
-                padding: '16px',
+                border: '2px solid rgba(255, 255, 255, 0.52)',
+                padding: '8px',
             }}
         >
             {isFiller ? (
@@ -40,10 +40,10 @@ export default function GameCard({ item, index, isFiller = false }: GameCardProp
                 </div>
             ) : (
                 <>
-                    <div className="text-white text-3xl font-semibold text-center leading-tight overflow-hidden text-ellipsis line-clamp-2 mb-2">
+                    <div className="text-white text-2xl font-semibold text-center leading-tight overflow-hidden text-ellipsis line-clamp-3 mt-1">
                         {item.title}
                     </div>
-                    <div className="relative flex-shrink-0" style={{ width: '180px', height: '180px' }}>
+                    <div className="relative flex-shrink-0 w-full h-full" style={{ width: '100%', height: '170px' }}>
                         <Image
                             src={item.image_url}
                             alt={item.title}
@@ -52,7 +52,7 @@ export default function GameCard({ item, index, isFiller = false }: GameCardProp
                             unoptimized
                         />
                     </div>
-                    <div className="bg-red-600 text-white text-4xl font-bold px-6 py-1 rounded-full shadow-lg mt-2">
+                    <div className="bg-red-600 text-white text-3xl font-bold px-6 py-1 rounded-full shadow-lg mt-1">
                         {item.price} лв
                     </div>
                 </>
