@@ -40,7 +40,7 @@ export default function GameCard({ item, index, isFiller = false }: GameCardProp
                 </div>
             ) : (
                 <>
-                    <div className="text-white text-3xl font-semibold text-center leading-tight overflow-hidden text-ellipsis line-clamp-2">
+                    <div className="text-white text-3xl font-semibold text-center leading-tight overflow-hidden text-ellipsis line-clamp-2 mb-2">
                         {item.title}
                     </div>
                     <div className="relative flex-shrink-0" style={{ width: '180px', height: '180px' }}>
