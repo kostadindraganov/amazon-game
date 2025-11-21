@@ -30,7 +30,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen casino-gradient overflow-hidden">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-28">
         {/* Header */}
         <div className="text-center mb-4">
           <div className="my-4 flex items-center justify-center gap-2 text-5xl text-casino-gold font-semibold">
