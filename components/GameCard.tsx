@@ -54,7 +54,7 @@ export default function GameCard({ item, index, isFiller = false }: GameCardProp
                     </div>
 
                     <div className="bg-red-600 text-white text-3xl font-bold px-6 py-1 rounded-full shadow-lg mt-1">
-                        {/* {item.price} лв */}
+                        {item.price} лв
                     </div>
                 </>
             )}
