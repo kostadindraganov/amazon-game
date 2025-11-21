@@ -52,11 +52,10 @@ export default function GameCard({ item, index, isFiller = false }: GameCardProp
                             unoptimized
                         />
                     </div>
-                    <div className="bg-white text-white text-xl font-bold px-6 py-1 rounded-full shadow-lg">
-                    </div>
-                    {/* <div className="bg-red-600 text-white text-3xl font-bold px-6 py-1 rounded-full shadow-lg mt-1">
+
+                    <div className="bg-red-600 text-white text-3xl font-bold px-6 py-1 rounded-full shadow-lg mt-1">
                         {item.price} лв
-                    </div> */}
+                    </div>
                 </>
             )}
         </div>
