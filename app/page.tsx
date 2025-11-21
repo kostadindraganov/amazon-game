@@ -38,8 +38,8 @@ export default function Home() {
           </div>
           <div className="flex items-center justify-center gap-2 text-5xl text-casino-gold font-semibold my-3">
             {/* <span className="text-6xl text-white font-bold">{settings.min_points_for_play}</span> */}
-            <img src="/hat.webp" alt="Coin" className="w-32 h-32" />
-            <img src="/hat2.webp" alt="Coin" className="w-32 h-32" />
+            {/* <img src="/hat.webp" alt="Coin" className="w-32 h-32" />
+            <img src="/hat2.webp" alt="Coin" className="w-32 h-32" /> */}
 
           </div>
         </div>
