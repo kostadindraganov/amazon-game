@@ -33,10 +33,7 @@ export default function Home() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-4">
-          <h1 className="text-4xl font-bold mb-4">
-            🎰 Играй за тези награди 🎰
-          </h1>
-          <div className="flex items-center justify-center gap-2 text-5xl text-casino-gold font-semibold">
+          <div className="my-4 flex items-center justify-center gap-2 text-5xl text-casino-gold font-semibold">
             <span>{settings.headline_text} </span>
           </div>
           <div className="flex items-center justify-center gap-2 text-5xl text-casino-gold font-semibold my-3">

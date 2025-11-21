@@ -50,7 +50,7 @@ export default function Leaderboard() {
   return (
     <div className="w-full mx-auto mt-8 block">
       <h2 className="text-center text-3xl font-black text-yellow-400 mb-4 tracking-wider drop-shadow-md uppercase">
-        Печелившите днес
+        Победителите
       </h2>
       <div className="h-[220px] overflow-hidden border-2 border-solid border-yellow-300/50 rounded-xl shadow-lg shadow-yellow-900/20">
         {/* Winner Display with Flip Animation */}
