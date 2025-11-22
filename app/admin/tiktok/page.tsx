@@ -137,11 +137,11 @@ export default function TikTokLivePage() {
     fetchSettings();
     fetchLogs();
 
-    // Auto-refresh every 5 seconds
+    // Auto-refresh every 2 seconds
     const interval = setInterval(() => {
       fetchSettings();
       fetchLogs();
-    }, 5000);
+    }, 2000);
 
     return () => clearInterval(interval);
   }, []);
@@ -219,7 +219,10 @@ export default function TikTokLivePage() {
           )}
 
           {settings.error_message && (
-            <div className="mb-4 bg-red-900 border border-red-700 text-red-200 px-3 py-2 rounded text-sm">
+            <div className={`mb-4 border px-3 py-2 rounded text-sm ${settings.connection_status === 'connecting'
+              ? 'bg-yellow-900 border-yellow-700 text-yellow-200'
+              : 'bg-red-900 border-red-700 text-red-200'
+              }`}>
               {settings.error_message}
             </div>
           )}

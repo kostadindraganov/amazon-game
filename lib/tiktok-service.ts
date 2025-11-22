@@ -10,9 +10,15 @@ class TikTokLiveService {
   private isIntentionalDisconnect: boolean = false;
   private reconnectTimer: NodeJS.Timeout | null = null;
 
-  async connect(username: string): Promise<{ success: boolean; error?: string; roomId?: string }> {
+  private retryCount: number = 0;
+
+  async connect(username: string, isReconnect: boolean = false): Promise<{ success: boolean; error?: string; roomId?: string }> {
     try {
       this.isIntentionalDisconnect = false;
+      if (!isReconnect) {
+        this.retryCount = 0;
+      }
+
       if (this.reconnectTimer) {
         clearTimeout(this.reconnectTimer);
         this.reconnectTimer = null;
@@ -32,7 +38,7 @@ class TikTokLiveService {
         .update({
           username,
           connection_status: 'connecting',
-          error_message: null,
+          error_message: isReconnect ? `Reconnecting to ${username} (Attempt ${this.retryCount}/3)...` : null,
         })
         .eq('id', 1);
 
@@ -46,6 +52,7 @@ class TikTokLiveService {
       const state = await this.connection.connect();
 
       this.isConnecting = false;
+      this.retryCount = 0; // Reset retry count on successful connection
 
       // Update status to connected
       await supabaseAdmin
@@ -58,8 +65,6 @@ class TikTokLiveService {
           error_message: null,
         })
         .eq('id', 1);
-
-
 
       return { success: true, roomId: state.roomId };
     } catch (error: any) {
@@ -247,14 +252,32 @@ class TikTokLiveService {
   private async handleAutoReconnect(username: string) {
     if (this.isIntentionalDisconnect) return;
 
-    console.log(`🔄 Connection lost. Auto-reconnecting to ${username} in 5s...`);
+    this.retryCount++;
+
+    if (this.retryCount > 3) {
+      console.log(`❌ Failed to reconnect after 3 attempts. Giving up.`);
+      await supabaseAdmin
+        .from('tiktok_settings')
+        .update({
+          connection_status: 'disconnected',
+          error_message: 'Failed to reconnect after 3 attempts.',
+          is_connected: false
+        })
+        .eq('id', 1);
+
+      this.isIntentionalDisconnect = true; // Stop further reconnects
+      this.connection = null; // Ensure connection is cleared
+      return;
+    }
+
+    console.log(`🔄 Connection lost. Auto-reconnecting to ${username} (Attempt ${this.retryCount}/3) in 5s...`);
 
     // Update status in database to connecting
     await supabaseAdmin
       .from('tiktok_settings')
       .update({
         connection_status: 'connecting',
-        error_message: 'Connection lost. Auto-reconnecting in 5s...',
+        error_message: `Connection lost. Reconnecting (Attempt ${this.retryCount}/3) in 5s...`,
       })
       .eq('id', 1);
 
@@ -265,7 +288,7 @@ class TikTokLiveService {
       if (this.isIntentionalDisconnect) return;
 
       console.log(`🔄 Attempting auto-reconnect to ${username}...`);
-      const result = await this.connect(username);
+      const result = await this.connect(username, true);
 
       // If connection failed and it wasn't intentional disconnect, retry
       if (!result.success && !this.isIntentionalDisconnect) {
