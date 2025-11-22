@@ -5,10 +5,19 @@ import { supabaseAdmin } from './supabase';
 class TikTokLiveService {
   private connection: WebcastPushConnection | null = null;
   private username: string | null = null;
+
   private isConnecting: boolean = false;
+  private isIntentionalDisconnect: boolean = false;
+  private reconnectTimer: NodeJS.Timeout | null = null;
 
   async connect(username: string): Promise<{ success: boolean; error?: string; roomId?: string }> {
     try {
+      this.isIntentionalDisconnect = false;
+      if (this.reconnectTimer) {
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = null;
+      }
+
       // Disconnect existing connection if any
       if (this.connection) {
         await this.disconnect();
@@ -75,6 +84,12 @@ class TikTokLiveService {
 
   async disconnect(): Promise<void> {
     try {
+      this.isIntentionalDisconnect = true;
+      if (this.reconnectTimer) {
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = null;
+      }
+
       // Disconnect the connection if it exists
       if (this.connection) {
         this.connection.disconnect();
@@ -185,16 +200,20 @@ class TikTokLiveService {
     });
 
     this.connection.on('disconnected', async () => {
-
-
-      // Update status in database
-      await supabaseAdmin
-        .from('tiktok_settings')
-        .update({
-          is_connected: false,
-          connection_status: 'disconnected',
-        })
-        .eq('id', 1);
+      // If disconnect was not intentional and we have a username, try to reconnect
+      if (!this.isIntentionalDisconnect && this.username) {
+        await this.handleAutoReconnect(this.username);
+      } else {
+        // Normal disconnect logic
+        await supabaseAdmin
+          .from('tiktok_settings')
+          .update({
+            is_connected: false,
+            connection_status: 'disconnected',
+            error_message: null,
+          })
+          .eq('id', 1);
+      }
     });
 
     this.connection.on('error', async (err) => {
@@ -223,6 +242,37 @@ class TikTokLiveService {
     this.connection.on('like', (data) => {
 
     });
+  }
+
+  private async handleAutoReconnect(username: string) {
+    if (this.isIntentionalDisconnect) return;
+
+    console.log(`🔄 Connection lost. Auto-reconnecting to ${username} in 5s...`);
+
+    // Update status in database to connecting
+    await supabaseAdmin
+      .from('tiktok_settings')
+      .update({
+        connection_status: 'connecting',
+        error_message: 'Connection lost. Auto-reconnecting in 5s...',
+      })
+      .eq('id', 1);
+
+    // Schedule reconnect
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+
+    this.reconnectTimer = setTimeout(async () => {
+      if (this.isIntentionalDisconnect) return;
+
+      console.log(`🔄 Attempting auto-reconnect to ${username}...`);
+      const result = await this.connect(username);
+
+      // If connection failed and it wasn't intentional disconnect, retry
+      if (!result.success && !this.isIntentionalDisconnect) {
+        console.log(`❌ Auto-reconnect failed. Retrying in 5s...`);
+        this.handleAutoReconnect(username);
+      }
+    }, 5000);
   }
 
   getConnectionStatus(): { isConnected: boolean; username: string | null } {
